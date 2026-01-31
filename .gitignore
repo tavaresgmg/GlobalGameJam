@@ -1,0 +1,23 @@
+# OS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Editor/IDE
+.vscode/
+.idea/
+
+# Love2D build artifacts
+*.love
+*.zip
+/build/
+/dist/
+/release/
+/out/
+
+# Logs
+*.log
+
+# Temp
+*.tmp
+*.swp
