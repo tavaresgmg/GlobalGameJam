@@ -3,4 +3,5 @@ return {
   "data.levels.level02",
   "data.levels.level03",
   "data.levels.level04",
+  "data.levels.level05",
 }

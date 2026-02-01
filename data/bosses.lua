@@ -1,7 +1,7 @@
 local bosses = {
   {
     id = "boss_ferro",
-    name = "João Facão",
+    name = "Capanga do Ferro",
     max_health = 272,
     speed = 90,
     charge_speed = 260,

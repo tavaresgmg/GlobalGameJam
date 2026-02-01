@@ -623,7 +623,23 @@ function Level:draw()
   else
     love.graphics.setColor(0.2, 0.2, 0.2)
     for _, platform in ipairs(self.world.platforms) do
-      love.graphics.rectangle("fill", platform.x, platform.y, platform.w, platform.h)
+      if not platform.sprite then
+        love.graphics.rectangle("fill", platform.x, platform.y, platform.w, platform.h)
+      end
+    end
+  end
+
+  -- Desenha sprites de plataformas
+  if self.assets and self.assets.platforms then
+    love.graphics.setColor(1, 1, 1)
+    for i, platform in ipairs(self.world.platforms) do
+      if platform.sprite and self.assets.platforms[platform.sprite] then
+        local img = self.assets.platforms[platform.sprite]
+        local s = platform.sprite_scale or 1
+        local ox = platform.sprite_offset_x or 0
+        local oy = platform.sprite_offset_y or 0
+        love.graphics.draw(img, platform.x + ox, platform.y + oy, 0, s, s)
+      end
     end
   end
 

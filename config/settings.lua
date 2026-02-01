@@ -1,5 +1,5 @@
 local settings = {
-  title = "Jogo Jam",
+  title = "Máscara e Poder",
   width = 960,
   height = 540,
   fullscreen = false,
