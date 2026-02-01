@@ -26,7 +26,8 @@ O final e determinado pela proporcao entre mascaras absorvidas e removidas.
 - Pulo: Space
 - Dash: Shift
 - Ataque: J, K ou X
-- Especial: Q
+- Especial: R
+- Trocar arma: Q
 - Interagir: E
 
 ## Status

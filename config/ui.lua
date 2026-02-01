@@ -54,6 +54,11 @@ local ui = {
       abilities_header_y = 6,
       abilities_text_y = 18,
       abilities_line_h = 12,
+      weapon_panel_h = 30,
+      weapon_panel_gap = 8,
+      weapon_slot_size = 16,
+      weapon_slot_gap = 6,
+      weapon_text_y = 7,
     },
     menu = {
       border_padding = 24,

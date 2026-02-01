@@ -1,4 +1,5 @@
 local UI = require("config.ui")
+local Suit = require("support.suit")
 
 local Hud = {}
 Hud.__index = Hud
@@ -85,18 +86,38 @@ function Hud.new(assets)
   self.font_title = load_font(assets, HUD_FONTS.title)
   self.font_body = load_font(assets, HUD_FONTS.body)
   self.font_small = load_font(assets, HUD_FONTS.small)
+  self.suit = Suit.new()
   return self
 end
 
 local function draw_status_panel(self, player, x, y, width, height)
+  local suit = self.suit
   draw_box(x, y, width, height)
-  love.graphics.setFont(self.font_small)
-  set_color(HUD_COLORS.text_primary)
-  love.graphics.print("HP", x + HUD_LAYOUT.panel_inner, y + HUD_LAYOUT.status_text_y)
-  love.graphics.print(
+  suit:Label(
+    "HP",
+    {
+      id = "hud_hp_label",
+      font = self.font_small,
+      align = "left",
+      color = { normal = { fg = HUD_COLORS.text_primary } },
+    },
+    x + HUD_LAYOUT.panel_inner,
+    y + HUD_LAYOUT.status_text_y,
+    width - HUD_LAYOUT.panel_inner * 2,
+    16
+  )
+  suit:Label(
     tostring(player.health) .. "/" .. tostring(player.max_health),
-    x + width - HUD_LAYOUT.hp_text_offset,
-    y + HUD_LAYOUT.status_text_y
+    {
+      id = "hud_hp_value",
+      font = self.font_small,
+      align = "right",
+      color = { normal = { fg = HUD_COLORS.text_primary } },
+    },
+    x + HUD_LAYOUT.panel_inner,
+    y + HUD_LAYOUT.status_text_y,
+    width - HUD_LAYOUT.panel_inner * 2,
+    16
   )
 
   draw_bar(
@@ -109,35 +130,59 @@ local function draw_status_panel(self, player, x, y, width, height)
     { 0.25, 0.9, 0.4 }
   )
 
-  love.graphics.setFont(self.font_small)
-  set_color(HUD_COLORS.text_secondary)
-  love.graphics.print(
+  suit:Label(
     "Modo: " .. player.mode,
+    {
+      id = "hud_mode",
+      font = self.font_small,
+      align = "left",
+      color = { normal = { fg = HUD_COLORS.text_secondary } },
+    },
     x + HUD_LAYOUT.panel_inner,
-    y + HUD_LAYOUT.mode_text_y
+    y + HUD_LAYOUT.mode_text_y,
+    width - HUD_LAYOUT.panel_inner * 2,
+    16
   )
 end
 
 local function draw_combat_panel(self, player, x, y, width, height, level_index, total_levels)
+  local suit = self.suit
   draw_box(x, y, width, height)
-  love.graphics.setFont(self.font_small)
 
   local special_ready = player.mode == "offensive" and player.special_ready_offensive
     or player.special_ready_defensive
   local special_color = special_ready and HUD_COLORS.special_ready or HUD_COLORS.special_wait
-  set_color(special_color)
   local special_label = special_ready and "Especial: PRONTO" or "Especial: carregando"
-  love.graphics.print(special_label, x + HUD_LAYOUT.panel_inner, y + HUD_LAYOUT.status_text_y)
+  suit:Label(
+    special_label,
+    {
+      id = "hud_special",
+      font = self.font_small,
+      align = "left",
+      color = { normal = { fg = special_color } },
+    },
+    x + HUD_LAYOUT.panel_inner,
+    y + HUD_LAYOUT.status_text_y,
+    width - HUD_LAYOUT.panel_inner * 2,
+    16
+  )
 
-  set_color(HUD_COLORS.text_secondary)
   local phase_label = ""
   if level_index and total_levels then
     phase_label = "  |  Fase " .. tostring(level_index) .. "/" .. tostring(total_levels)
   end
-  love.graphics.print(
+  suit:Label(
     "A: " .. player.masks_absorbed .. "  R: " .. player.masks_removed .. phase_label,
+    {
+      id = "hud_masks",
+      font = self.font_small,
+      align = "left",
+      color = { normal = { fg = HUD_COLORS.text_secondary } },
+    },
     x + HUD_LAYOUT.panel_inner,
-    y + HUD_LAYOUT.mode_text_y
+    y + HUD_LAYOUT.mode_text_y,
+    width - HUD_LAYOUT.panel_inner * 2,
+    16
   )
 end
 
@@ -147,25 +192,81 @@ local function draw_abilities_panel(self, player, ability_defs, x, y, width)
     return
   end
 
-  love.graphics.setFont(self.font_small)
+  local suit = self.suit
   local lines = wrap_lines(self.font_small, abilities, width - HUD_LAYOUT.panel_inner * 2)
   local height = HUD_LAYOUT.abilities_header_y
     + HUD_LAYOUT.abilities_text_y
     + #lines * HUD_LAYOUT.abilities_line_h
 
   draw_box(x, y - height, width, height)
-  set_color(HUD_COLORS.abilities_title)
-  love.graphics.print(
+  suit:Label(
     "Habilidades",
+    {
+      id = "hud_abilities_title",
+      font = self.font_small,
+      align = "left",
+      color = { normal = { fg = HUD_COLORS.abilities_title } },
+    },
     x + HUD_LAYOUT.panel_inner,
-    y - height + HUD_LAYOUT.abilities_header_y
+    y - height + HUD_LAYOUT.abilities_header_y,
+    width - HUD_LAYOUT.panel_inner * 2,
+    16
   )
 
   local line_y = y - height + HUD_LAYOUT.abilities_text_y
-  set_color(HUD_COLORS.abilities_text)
-  for _, line in ipairs(lines) do
-    love.graphics.print(line, x + HUD_LAYOUT.panel_inner, line_y)
+  for i, line in ipairs(lines) do
+    suit:Label(
+      line,
+      {
+        id = "hud_abilities_" .. tostring(i),
+        font = self.font_small,
+        align = "left",
+        color = { normal = { fg = HUD_COLORS.abilities_text } },
+      },
+      x + HUD_LAYOUT.panel_inner,
+      line_y,
+      width - HUD_LAYOUT.panel_inner * 2,
+      16
+    )
     line_y = line_y + HUD_LAYOUT.abilities_line_h
+  end
+end
+
+local function draw_weapon_panel(self, player, x, y, width, height)
+  local suit = self.suit
+  draw_box(x, y, width, height)
+
+  suit:Label(
+    "Armas",
+    {
+      id = "hud_weapons_title",
+      font = self.font_small,
+      align = "left",
+      color = { normal = { fg = HUD_COLORS.text_secondary } },
+    },
+    x + HUD_LAYOUT.panel_inner,
+    y + HUD_LAYOUT.weapon_text_y,
+    width - HUD_LAYOUT.panel_inner * 2,
+    16
+  )
+
+  local slot_size = HUD_LAYOUT.weapon_slot_size
+  local slot_gap = HUD_LAYOUT.weapon_slot_gap
+  local total_width = slot_size * 2 + slot_gap
+  local slot_x = x + width - HUD_LAYOUT.panel_inner - total_width
+  local slot_y = y + (height - slot_size) / 2
+
+  for i = 1, 2 do
+    local weapon = player.weapons and player.weapons[i]
+    local color = (weapon and weapon.color) or { 0.35, 0.35, 0.35 }
+    set_color(color, 0.95)
+    love.graphics.rectangle("fill", slot_x, slot_y, slot_size, slot_size, 3, 3)
+
+    local is_active = player.weapon_index == i
+    set_color(is_active and { 1, 1, 1, 1 } or { 0.4, 0.4, 0.4, 0.9 })
+    love.graphics.rectangle("line", slot_x, slot_y, slot_size, slot_size, 3, 3)
+
+    slot_x = slot_x + slot_size + slot_gap
   end
 end
 
@@ -198,6 +299,18 @@ function Hud:draw(player, ability_defs, _, _, settings, level_index, total_level
     screen_h - padding,
     abilities_w
   )
+
+  local weapon_panel_h = HUD_LAYOUT.weapon_panel_h
+  draw_weapon_panel(
+    self,
+    player,
+    screen_w - padding - panel_w,
+    padding + panel_h + HUD_LAYOUT.weapon_panel_gap,
+    panel_w,
+    weapon_panel_h
+  )
+
+  self.suit:draw()
 end
 
 return Hud

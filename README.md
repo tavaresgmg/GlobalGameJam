@@ -22,7 +22,8 @@ make check
 - Pulo: Space
 - Dash: Shift
 - Ataque: J, K ou X
-- Especial: Q
+- Especial: R
+- Trocar arma: Q
 - Interagir: E
 - Voltar ao menu: Esc
 

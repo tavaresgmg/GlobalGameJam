@@ -15,6 +15,7 @@ local Health = require("systems.health")
 local Collision = require("systems.collision")
 local Triggers = require("systems.triggers")
 local LevelIndex = require("data.levels.index")
+local WeaponDefs = require("data.weapons")
 local BossDefs = require("data.bosses")
 local AbilityDefs = require("data.abilities")
 local EnemyDefs = require("data.enemies")
@@ -53,6 +54,7 @@ local function build_player_state(player)
     special_defensive_unlocked = player.special_defensive_unlocked,
     active_abilities = copy_list(player.active_abilities),
     ability_set = copy_map(player.ability_set),
+    weapon_index = player.weapon_index,
   }
 end
 
@@ -73,6 +75,13 @@ local function apply_player_state(player, state, ability_defs)
   player.special_defensive_unlocked = state.special_defensive_unlocked or false
   player.active_abilities = copy_list(state.active_abilities)
   player.ability_set = copy_map(state.ability_set)
+  if state.weapon_index and player.weapons and player.weapons[state.weapon_index] then
+    player.weapon_index = state.weapon_index
+  elseif player.weapons and #player.weapons > 0 then
+    player.weapon_index = 1
+  else
+    player.weapon_index = nil
+  end
   Abilities.recalculate(player, ability_defs)
 
   if state.health then
@@ -134,7 +143,8 @@ function Level:enter()
   end
 
   self.spawn = level_data.spawn
-  self.player = Player.new(self.spawn.x, self.spawn.y, constants.player, self.context.assets)
+  self.player =
+    Player.new(self.spawn.x, self.spawn.y, constants.player, self.context.assets, WeaponDefs)
   self.player.on_ground = true
   Collision.add(self.collision_world, self.player)
 
@@ -167,6 +177,8 @@ function Level:enter()
 
   self.enemies = build_enemy_spawns(level_data.enemy_spawns)
   for _, enemy in ipairs(self.enemies) do
+    enemy.bound_left = 0
+    enemy.bound_right = level_data.boss_limit_x or self.world.width
     Collision.add(self.collision_world, enemy)
   end
 
@@ -183,6 +195,8 @@ function Level:enter()
   end
   for _, boss in ipairs(self.bosses) do
     boss.damage = constants.boss.damage
+    boss.bound_left = 0
+    boss.bound_right = self.world.width
     Collision.add(self.collision_world, boss)
   end
 
@@ -304,7 +318,7 @@ local function build_messages(level)
   else
     table.insert(messages, "Modo defensivo: liberta mascaras ao derrotar inimigos.")
   end
-  table.insert(messages, "Dash: Shift | Especial: Q | Interagir: E")
+  table.insert(messages, "Dash: Shift | Trocar arma: Q | Especial: R | Interagir: E")
 
   if
     unmask_trigger
@@ -343,6 +357,19 @@ end
 function Level:update(dt)
   update_timers(self, dt)
 
+  if self.context.input:pressed("swap_weapon") then
+    self.player:swap_weapon()
+  end
+
+  local special_targets = {}
+  for _, enemy in ipairs(self.enemies) do
+    table.insert(special_targets, enemy)
+  end
+  for _, boss in ipairs(self.bosses) do
+    table.insert(special_targets, boss)
+  end
+  Combat.use_special(self.player, self.context.input, special_targets, self.context.constants, AbilityDefs)
+
   AI.update(self.enemies, self.player, self.context.constants.enemy.agro_range, dt)
 
   for _, boss in ipairs(self.bosses) do
@@ -377,7 +404,8 @@ function Level:update(dt)
   ) or attack_started
 
   if attack_started and self.particles then
-    local range = self.context.constants.player.attack_range
+    local weapon = self.player:current_weapon()
+    local range = (weapon and weapon.attack_range) or self.context.constants.player.attack_range
     local px = self.player.x + self.player.w / 2 + (range * 0.6) * self.player.dir
     local py = self.player.y + self.player.h / 2
     self.particles:emit_attack(px, py, self.player.dir)

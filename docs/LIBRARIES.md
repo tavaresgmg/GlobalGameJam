@@ -7,6 +7,7 @@
 - **HUMP Gamestate**: troca de cenas (menu, fase, final) sem estado custom.
 - **lurker + lume** (dev): hot reload de codigo em desenvolvimento.
 - **cargo**: asset manager (fonts via assets).
+- **SUIT**: UI imediata para HUD/slots com pouco codigo.
 
 ## Preparadas (para integrar)
 - **anim8**: animacoes por spritesheet (quando assets chegarem).
@@ -15,7 +16,6 @@
 ## Candidatas (avaliar)
 - **STI**: integra mapas do Tiled para reduzir codigo de fase.
 - **bitser**: serializacao para save/progressao (requer LuaJIT).
-- **SUIT**: UI imediata para menus e opcoes com pouco codigo.
 - **Jumper**: pathfinding grid para AI em mapas.
 
 ## Diretriz

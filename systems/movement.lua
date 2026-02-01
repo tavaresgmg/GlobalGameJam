@@ -117,6 +117,18 @@ function Movement.update_enemies(enemies, world, collision_world, dt)
       local goal_x = enemy.x + speed * enemy.dir * dt
       local goal_y = enemy.y + enemy.vy * dt
 
+      if enemy.bound_left or enemy.bound_right then
+        local left_limit = enemy.bound_left or -math.huge
+        local right_limit = enemy.bound_right or math.huge
+        if goal_x < left_limit then
+          goal_x = left_limit
+          enemy.dir = 1
+        elseif goal_x + enemy.w > right_limit then
+          goal_x = right_limit - enemy.w
+          enemy.dir = -1
+        end
+      end
+
       if enemy.patrol_left and enemy.patrol_right and not enemy.chase_only then
         if goal_x < enemy.patrol_left then
           goal_x = enemy.patrol_left

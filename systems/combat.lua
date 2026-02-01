@@ -85,15 +85,16 @@ function Combat.update(
   target_tag
 )
   local attack_started = false
+  local weapon = player.current_weapon and player:current_weapon() or nil
+  local attack_duration = (weapon and weapon.attack_duration) or constants.player.attack_duration
+  local attack_cooldown = (weapon and weapon.attack_cooldown) or constants.player.attack_cooldown
   if player.attack_cooldown > 0 then
     player.attack_cooldown = player.attack_cooldown - dt
   end
 
-  Combat.use_special(player, input, targets, constants, ability_defs)
-
   if input:pressed("attack") and player.attack_cooldown <= 0 then
-    player.attack_timer = constants.player.attack_duration
-    player.attack_cooldown = constants.player.attack_cooldown
+    player.attack_timer = attack_duration
+    player.attack_cooldown = attack_cooldown
     player.attack_hits = {}
     attack_started = true
   end
@@ -103,8 +104,9 @@ function Combat.update(
   end
 
   player.attack_timer = player.attack_timer - dt
-  local hitbox = player:attack_box(constants.player)
-  local damage = constants.player.attack_damage * (1 + player.bonuses.attack_mult)
+  local hitbox = player:attack_box(constants.player, weapon)
+  local base_damage = (weapon and weapon.attack_damage) or constants.player.attack_damage
+  local damage = base_damage * (1 + player.bonuses.attack_mult)
   local hit_targets = hit_targets_in_hitbox(collision_world, hitbox, target_tag) or targets
 
   for _, target in ipairs(hit_targets) do

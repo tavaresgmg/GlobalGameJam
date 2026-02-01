@@ -100,12 +100,45 @@ local function build_level_data(data, level_index)
   end
 
   local boss_spawns = {}
+  local boss_end_offset = 180
+  local boss_spacing = 120
+  local boss_count = 0
   for _, boss in ipairs(data.boss_spawns or {}) do
     if in_range(boss.x, start_x, end_x) then
+      boss_count = boss_count + 1
+      local desired_x = segment_length - boss_end_offset - (boss_count - 1) * boss_spacing
+      if desired_x < 80 then
+        desired_x = segment_length - 80
+      end
       table.insert(boss_spawns, {
         boss_index = boss.boss_index,
-        x = boss.x + offset_x,
+        x = desired_x,
       })
+    end
+  end
+
+  local boss_limit_x = nil
+  if #boss_spawns > 0 then
+    boss_limit_x = boss_spawns[1].x - 120
+    if boss_limit_x < 80 then
+      boss_limit_x = 80
+    end
+    if boss_limit_x > segment_length - 80 then
+      boss_limit_x = segment_length - 80
+    end
+    for _, spawn in ipairs(enemy_spawns) do
+      if spawn.x > boss_limit_x then
+        spawn.x = boss_limit_x
+      end
+      if spawn.left and spawn.left > boss_limit_x then
+        spawn.left = boss_limit_x
+      end
+      if spawn.right and spawn.right > boss_limit_x then
+        spawn.right = boss_limit_x
+      end
+      if spawn.left and spawn.right and spawn.right < spawn.left then
+        spawn.right = spawn.left + 40
+      end
     end
   end
 
@@ -155,6 +188,7 @@ local function build_level_data(data, level_index)
     floor_y = data.floor_y,
     pickup_spawns = pickup_spawns,
     boss_spawns = boss_spawns,
+    boss_limit_x = boss_limit_x,
     level_index = level_index,
   }
 end
