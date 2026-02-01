@@ -130,19 +130,12 @@ local function draw_status_panel(self, player, x, y, width, height)
     { 0.25, 0.9, 0.4 }
   )
 
-  suit:Label(
-    "Modo: " .. player.mode,
-    {
-      id = "hud_mode",
-      font = self.font_small,
-      align = "left",
-      color = { normal = { fg = HUD_COLORS.text_secondary } },
-    },
-    x + HUD_LAYOUT.panel_inner,
-    y + HUD_LAYOUT.mode_text_y,
-    width - HUD_LAYOUT.panel_inner * 2,
-    16
-  )
+  suit:Label("Modo: " .. player.mode, {
+    id = "hud_mode",
+    font = self.font_small,
+    align = "left",
+    color = { normal = { fg = HUD_COLORS.text_secondary } },
+  }, x + HUD_LAYOUT.panel_inner, y + HUD_LAYOUT.mode_text_y, width - HUD_LAYOUT.panel_inner * 2, 16)
 end
 
 local function draw_combat_panel(self, player, x, y, width, height, level_index, total_levels)
@@ -171,19 +164,12 @@ local function draw_combat_panel(self, player, x, y, width, height, level_index,
   if level_index and total_levels then
     phase_label = "  |  Fase " .. tostring(level_index) .. "/" .. tostring(total_levels)
   end
-  suit:Label(
-    "A: " .. player.masks_absorbed .. "  R: " .. player.masks_removed .. phase_label,
-    {
-      id = "hud_masks",
-      font = self.font_small,
-      align = "left",
-      color = { normal = { fg = HUD_COLORS.text_secondary } },
-    },
-    x + HUD_LAYOUT.panel_inner,
-    y + HUD_LAYOUT.mode_text_y,
-    width - HUD_LAYOUT.panel_inner * 2,
-    16
-  )
+  suit:Label("A: " .. player.masks_absorbed .. "  R: " .. player.masks_removed .. phase_label, {
+    id = "hud_masks",
+    font = self.font_small,
+    align = "left",
+    color = { normal = { fg = HUD_COLORS.text_secondary } },
+  }, x + HUD_LAYOUT.panel_inner, y + HUD_LAYOUT.mode_text_y, width - HUD_LAYOUT.panel_inner * 2, 16)
 end
 
 local function draw_abilities_panel(self, player, ability_defs, x, y, width)
@@ -215,19 +201,12 @@ local function draw_abilities_panel(self, player, ability_defs, x, y, width)
 
   local line_y = y - height + HUD_LAYOUT.abilities_text_y
   for i, line in ipairs(lines) do
-    suit:Label(
-      line,
-      {
-        id = "hud_abilities_" .. tostring(i),
-        font = self.font_small,
-        align = "left",
-        color = { normal = { fg = HUD_COLORS.abilities_text } },
-      },
-      x + HUD_LAYOUT.panel_inner,
-      line_y,
-      width - HUD_LAYOUT.panel_inner * 2,
-      16
-    )
+    suit:Label(line, {
+      id = "hud_abilities_" .. tostring(i),
+      font = self.font_small,
+      align = "left",
+      color = { normal = { fg = HUD_COLORS.abilities_text } },
+    }, x + HUD_LAYOUT.panel_inner, line_y, width - HUD_LAYOUT.panel_inner * 2, 16)
     line_y = line_y + HUD_LAYOUT.abilities_line_h
   end
 end

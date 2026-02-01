@@ -58,13 +58,7 @@ function GameOver:draw()
 
   love.graphics.setFont(self.font_body)
   set_color(MENU_COLORS.subtitle)
-  love.graphics.printf(
-    "Pressione Enter para tentar de novo",
-    0,
-    height * 0.48,
-    width,
-    "center"
-  )
+  love.graphics.printf("Pressione Enter para tentar de novo", 0, height * 0.48, width, "center")
 
   love.graphics.setFont(self.font_footer)
   set_color(MENU_COLORS.footer)

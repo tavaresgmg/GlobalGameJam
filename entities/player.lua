@@ -70,7 +70,40 @@ local function build_animation(assets)
   return sprite, run, idle, frame_w, frame_h
 end
 
-local function build_jump_frames(assets, path, sprite_sheet, frame_w, frame_h)
+local function build_sprite_reference(assets)
+  if not assets or not assets.sprites or not assets.sprites.player then
+    return nil
+  end
+  local sprite_sheet = assets.sprites.player.player_sheet
+  if not sprite_sheet or not sprite_sheet.newImageData then
+    return nil
+  end
+
+  local columns, rows = 8, 6
+  local frame_w = sprite_sheet:getWidth() / columns
+  local frame_h = sprite_sheet:getHeight() / rows
+
+  local ok_sheet, sheet_data = pcall(function()
+    return sprite_sheet:newImageData()
+  end)
+  if not ok_sheet or not sheet_data then
+    return nil
+  end
+
+  local bbox = alpha_bbox(sheet_data, 0, 0, frame_w, frame_h)
+  local bbox_h = bbox_height(bbox) or frame_h
+  local pad_bottom = 0
+  if bbox then
+    pad_bottom = frame_h - (bbox[4] + 1)
+  end
+
+  return {
+    bbox_height = bbox_h,
+    pad_bottom = pad_bottom,
+  }
+end
+
+local function build_jump_frames(assets, path, sprite_pad_bottom)
   if not assets or not assets.sprites or not assets.sprites.player_jump then
     return nil, nil, nil, nil, nil
   end
@@ -80,13 +113,13 @@ local function build_jump_frames(assets, path, sprite_sheet, frame_w, frame_h)
   end
 
   local frames = {}
-  local frame_w, frame_h = nil, nil
+  local jump_frame_w, jump_frame_h = nil, nil
   for _, filename in ipairs(files) do
     local key = filename:gsub("%.png$", "")
     local image = assets.sprites.player_jump[key]
     if image then
-      if not frame_w then
-        frame_w, frame_h = image:getWidth(), image:getHeight()
+      if not jump_frame_w then
+        jump_frame_w, jump_frame_h = image:getWidth(), image:getHeight()
       end
       table.insert(frames, image)
     end
@@ -96,31 +129,23 @@ local function build_jump_frames(assets, path, sprite_sheet, frame_w, frame_h)
     return nil, nil, nil, nil, nil
   end
 
-  local scale_adjust = 1
-  local jump_origin_y = nil
-  if love and love.image and sprite_sheet and frame_w and frame_h then
-    local ok_jump, jump_data = pcall(love.image.newImageData, path .. "/" .. files[1])
-    local ok_sheet, sheet_data = pcall(function()
-      return sprite_sheet:newImageData()
-    end)
-    if ok_jump and ok_sheet and jump_data and sheet_data then
-      local jump_bbox =
-        alpha_bbox(jump_data, 0, 0, jump_data:getWidth(), jump_data:getHeight())
-      local sheet_bbox = alpha_bbox(sheet_data, 0, 0, frame_w, frame_h)
-      local jump_h = bbox_height(jump_bbox)
-      local sheet_h = bbox_height(sheet_bbox)
-      if jump_h and sheet_h and jump_h > 0 then
-        scale_adjust = sheet_h / jump_h
-      end
-      if jump_bbox and sheet_bbox then
-        local sheet_pad = frame_h - (sheet_bbox[4] + 1)
-        local jump_pad = jump_data:getHeight() - (jump_bbox[4] + 1)
-        jump_origin_y = jump_data:getHeight() - (jump_pad - sheet_pad)
+  local jump_bbox_heights = {}
+  local jump_origin_ys = {}
+  if love and love.image then
+    for idx, filename in ipairs(files) do
+      local ok_jump, jump_data = pcall(love.image.newImageData, path .. "/" .. filename)
+      if ok_jump and jump_data then
+        local jump_bbox = alpha_bbox(jump_data, 0, 0, jump_data:getWidth(), jump_data:getHeight())
+        jump_bbox_heights[idx] = bbox_height(jump_bbox)
+        if sprite_pad_bottom and jump_bbox then
+          local jump_pad = jump_data:getHeight() - (jump_bbox[4] + 1)
+          jump_origin_ys[idx] = jump_data:getHeight() - (jump_pad - sprite_pad_bottom)
+        end
       end
     end
   end
 
-  return frames, frame_w, frame_h, scale_adjust, jump_origin_y
+  return frames, jump_frame_w, jump_frame_h, jump_bbox_heights, jump_origin_ys
 end
 
 function Player.new(x, y, config, assets, weapons)
@@ -168,25 +193,43 @@ function Player.new(x, y, config, assets, weapons)
   self.flash_timer = 0
   self.sprite, self.anim_run, self.anim_idle, self.sprite_frame_w, self.sprite_frame_h =
     build_animation(assets)
-  self.jump_frames, self.jump_frame_w, self.jump_frame_h, self.jump_scale_adjust, self.jump_origin_y =
+  self.sprite_reference = build_sprite_reference(assets)
+  self.jump_frames, self.jump_frame_w, self.jump_frame_h, self.jump_bbox_heights, self.jump_origin_ys =
     build_jump_frames(
       assets,
       "assets/sprites/player_jump",
-      self.sprite,
-      self.sprite_frame_w,
-      self.sprite_frame_h
+      self.sprite_reference and self.sprite_reference.pad_bottom or nil
     )
   self.anim = self.anim_idle or self.anim_run
   self.sprite_scale = nil
   self.jump_scale = nil
+  self.jump_scale_frames = nil
   self.sprite_offset_y = config.sprite_offset_y or 0
+  self.jump_scale_mult = config.jump_scale_mult or 1
   if self.sprite then
     self.sprite_scale = config.sprite_scale or (self.h / self.sprite_frame_h)
   end
+  if
+    self.sprite_scale
+    and self.sprite_reference
+    and self.sprite_reference.bbox_height
+    and self.jump_bbox_heights
+  then
+    self.jump_scale_frames = {}
+    for i, height in ipairs(self.jump_bbox_heights) do
+      if height and height > 0 then
+        self.jump_scale_frames[i] = self.sprite_scale
+          * (self.sprite_reference.bbox_height / height)
+          * self.jump_scale_mult
+      end
+    end
+  end
   if self.sprite_scale and self.jump_frame_h and self.sprite_frame_h then
-    local scale_bbox = self.sprite_scale * (self.jump_scale_adjust or 1)
-    local scale_size = self.sprite_scale * (self.sprite_frame_h / self.jump_frame_h)
-    self.jump_scale = (scale_bbox + scale_size) * 0.5
+    self.jump_scale = self.sprite_scale
+      * (self.sprite_frame_h / self.jump_frame_h)
+      * self.jump_scale_mult
+  elseif self.sprite_scale then
+    self.jump_scale = self.sprite_scale * self.jump_scale_mult
   end
   self.jump_frame_index = 1
   self.jump_timer = 0
@@ -271,12 +314,18 @@ function Player:draw()
 
   if self.jump_frames and not self.on_ground then
     local frame = self.jump_frames[self.jump_frame_index]
-    local scale = self.jump_scale or self.sprite_scale
+    local scale = self.jump_scale
+    if self.jump_scale_frames and self.jump_scale_frames[self.jump_frame_index] then
+      scale = self.jump_scale_frames[self.jump_frame_index]
+    end
+    scale = scale or self.sprite_scale
     if frame and scale then
       local sx = scale * (self.dir < 0 and -1 or 1)
       local sy = scale
       local origin_x = (self.jump_frame_w or frame:getWidth()) / 2
-      local origin_y = self.jump_origin_y or self.jump_frame_h or frame:getHeight()
+      local origin_y = self.jump_origin_ys and self.jump_origin_ys[self.jump_frame_index]
+        or self.jump_frame_h
+        or frame:getHeight()
       love.graphics.draw(
         frame,
         self.x + self.w / 2,

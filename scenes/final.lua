@@ -79,13 +79,7 @@ function Final:draw()
 
   love.graphics.setFont(self.font_footer)
   set_color(MENU_COLORS.footer)
-  love.graphics.printf(
-    "Pressione Enter para voltar ao menu",
-    0,
-    height * 0.62,
-    width,
-    "center"
-  )
+  love.graphics.printf("Pressione Enter para voltar ao menu", 0, height * 0.62, width, "center")
 end
 
 function Final:update()

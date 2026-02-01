@@ -351,6 +351,11 @@ local function entity_hits_player(entity, player)
       return true
     end
   end
+  for _, col in ipairs(player.collisions or {}) do
+    if col.other == entity then
+      return true
+    end
+  end
   return false
 end
 
@@ -368,7 +373,13 @@ function Level:update(dt)
   for _, boss in ipairs(self.bosses) do
     table.insert(special_targets, boss)
   end
-  Combat.use_special(self.player, self.context.input, special_targets, self.context.constants, AbilityDefs)
+  Combat.use_special(
+    self.player,
+    self.context.input,
+    special_targets,
+    self.context.constants,
+    AbilityDefs
+  )
 
   AI.update(self.enemies, self.player, self.context.constants.enemy.agro_range, dt)
 
