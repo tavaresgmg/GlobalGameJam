@@ -86,7 +86,11 @@ function Boss:update_behavior(player, dt, agro_range)
   local home_dx = self.home_x - self.x
   local home_distance = math.abs(home_dx)
 
-  if distance <= chase_range and distance <= self.charge_range and self.charge_cooldown_timer <= 0 then
+  if
+    distance <= chase_range
+    and distance <= self.charge_range
+    and self.charge_cooldown_timer <= 0
+  then
     self.is_charging = true
     self.charge_timer = 0.5
     self.dir = dx >= 0 and 1 or -1

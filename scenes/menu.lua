@@ -60,7 +60,13 @@ local function draw_title(width, title_font, subtitle_font)
 
   love.graphics.setFont(subtitle_font)
   set_color(MENU_COLORS.subtitle)
-  love.graphics.printf("Goias distopico. Escolha seu caminho.", 0, MENU_LAYOUT.subtitle_y, width, "center")
+  love.graphics.printf(
+    "Goias distopico. Escolha seu caminho.",
+    0,
+    MENU_LAYOUT.subtitle_y,
+    width,
+    "center"
+  )
 end
 
 local function draw_menu_list(width, y, items, selected_index, font)
@@ -101,7 +107,13 @@ local function draw_about(width, height, title_font, body_font)
     "center"
   )
   set_color(MENU_COLORS.about_footer)
-  love.graphics.printf("Enter/Esc para voltar", 0, height - MENU_LAYOUT.about_footer_offset, width, "center")
+  love.graphics.printf(
+    "Enter/Esc para voltar",
+    0,
+    height - MENU_LAYOUT.about_footer_offset,
+    width,
+    "center"
+  )
 end
 
 function Menu:draw()

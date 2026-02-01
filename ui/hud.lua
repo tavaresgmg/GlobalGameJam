@@ -27,9 +27,25 @@ end
 
 local function draw_box(x, y, width, height)
   set_color(HUD_COLORS.panel_fill)
-  love.graphics.rectangle("fill", x, y, width, height, HUD_LAYOUT.panel_radius, HUD_LAYOUT.panel_radius)
+  love.graphics.rectangle(
+    "fill",
+    x,
+    y,
+    width,
+    height,
+    HUD_LAYOUT.panel_radius,
+    HUD_LAYOUT.panel_radius
+  )
   set_color(HUD_COLORS.panel_line)
-  love.graphics.rectangle("line", x, y, width, height, HUD_LAYOUT.panel_radius, HUD_LAYOUT.panel_radius)
+  love.graphics.rectangle(
+    "line",
+    x,
+    y,
+    width,
+    height,
+    HUD_LAYOUT.panel_radius,
+    HUD_LAYOUT.panel_radius
+  )
 end
 
 local function draw_bar(x, y, width, height, value, max, color)
@@ -95,7 +111,11 @@ local function draw_status_panel(self, player, x, y, width, height)
 
   love.graphics.setFont(self.font_small)
   set_color(HUD_COLORS.text_secondary)
-  love.graphics.print("Modo: " .. player.mode, x + HUD_LAYOUT.panel_inner, y + HUD_LAYOUT.mode_text_y)
+  love.graphics.print(
+    "Modo: " .. player.mode,
+    x + HUD_LAYOUT.panel_inner,
+    y + HUD_LAYOUT.mode_text_y
+  )
 end
 
 local function draw_combat_panel(self, player, x, y, width, height)
@@ -125,7 +145,8 @@ local function draw_abilities_panel(self, player, ability_defs, x, y, width)
 
   love.graphics.setFont(self.font_small)
   local lines = wrap_lines(self.font_small, abilities, width - HUD_LAYOUT.panel_inner * 2)
-  local height = HUD_LAYOUT.abilities_header_y + HUD_LAYOUT.abilities_text_y
+  local height = HUD_LAYOUT.abilities_header_y
+    + HUD_LAYOUT.abilities_text_y
     + #lines * HUD_LAYOUT.abilities_line_h
 
   draw_box(x, y - height, width, height)

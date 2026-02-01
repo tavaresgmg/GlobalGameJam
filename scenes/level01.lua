@@ -69,12 +69,8 @@ function Level01:enter()
       local def = EnemyDefs[spawn.kind]
       if def then
         local platform = spawn.platform and self.world.platforms[spawn.platform] or nil
-        local y = spawn.y
-          or (platform and (platform.y - def.height))
-          or (floor_y - def.height)
-        local left_bound = spawn.left
-          or (platform and platform.x)
-          or (spawn.x - 80)
+        local y = spawn.y or (platform and (platform.y - def.height)) or (floor_y - def.height)
+        local left_bound = spawn.left or (platform and platform.x) or (spawn.x - 80)
         local right_bound = spawn.right
           or (platform and (platform.x + platform.w))
           or (spawn.x + 80)
@@ -305,7 +301,8 @@ function Level01:update(dt)
   local player_died = false
   for _, enemy in ipairs(self.enemies) do
     if enemy.alive and enemy.active and entity_hits_player(enemy, self.player) then
-      local died = player_hit(self, self.player, enemy.damage, self.context.constants.player.hurt_cooldown)
+      local died =
+        player_hit(self, self.player, enemy.damage, self.context.constants.player.hurt_cooldown)
       if died then
         player_died = true
         break
@@ -316,7 +313,8 @@ function Level01:update(dt)
   if not player_died then
     for _, boss in ipairs(self.bosses) do
       if boss.alive and entity_hits_player(boss, self.player) then
-        local died = player_hit(self, self.player, boss.damage, self.context.constants.player.hurt_cooldown)
+        local died =
+          player_hit(self, self.player, boss.damage, self.context.constants.player.hurt_cooldown)
         if died then
           player_died = true
           break

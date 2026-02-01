@@ -84,6 +84,7 @@ function Combat.update(
   collision_world,
   target_tag
 )
+  local attack_started = false
   if player.attack_cooldown > 0 then
     player.attack_cooldown = player.attack_cooldown - dt
   end
@@ -94,10 +95,11 @@ function Combat.update(
     player.attack_timer = constants.player.attack_duration
     player.attack_cooldown = constants.player.attack_cooldown
     player.attack_hits = {}
+    attack_started = true
   end
 
   if player.attack_timer <= 0 then
-    return
+    return attack_started
   end
 
   player.attack_timer = player.attack_timer - dt
@@ -113,6 +115,8 @@ function Combat.update(
       end
     end
   end
+
+  return attack_started
 end
 
 return Combat
