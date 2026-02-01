@@ -62,7 +62,7 @@ function Menu.new(context)
   local self = setmetatable({}, Menu)
   self.context = context
   self.screen = "menu"
-  self.items = { "Iniciar", "Sobre", "Sair" }
+  self.items = { "Iniciar", "Controles", "Sobre", "Sair" }
   self.selected_index = 1
   self.intro_page = 1
   self.intro_pages = {
@@ -225,6 +225,39 @@ local function draw_about(width, height, title_font, body_font)
   )
 end
 
+local function draw_controls(width, height, title_font, body_font)
+  love.graphics.setFont(title_font)
+  set_color(MENU_COLORS.title)
+  love.graphics.printf("Controles", 0, MENU_LAYOUT.about_title_y, width, "center")
+
+  love.graphics.setFont(body_font)
+  set_color(MENU_COLORS.about_body)
+  love.graphics.printf(
+    table.concat({
+      "Mover: WASD ou Setas",
+      "Pular: Espaço / W / Seta para cima",
+      "Dash: Shift",
+      "Atacar: J / K / X",
+      "Especial: R",
+      "Trocar arma: Q",
+      "Interagir: E",
+      "Pausar/Sair: Esc",
+    }, "\n"),
+    0,
+    MENU_LAYOUT.about_body_y,
+    width,
+    "center"
+  )
+  set_color(MENU_COLORS.about_footer)
+  love.graphics.printf(
+    "Enter/Esc para voltar",
+    0,
+    height - MENU_LAYOUT.about_footer_offset,
+    width,
+    "center"
+  )
+end
+
 local function draw_intro(width, height, title_font, body_font, page, page_index, total)
   love.graphics.setFont(title_font)
   set_color(MENU_COLORS.title)
@@ -278,6 +311,8 @@ function Menu:draw()
     draw_title(width, fonts.title, fonts.subtitle)
     draw_menu_list(width, MENU_LAYOUT.menu_start_y, self.items, self.selected_index, fonts.menu)
     draw_footer(width, fonts.footer)
+  elseif self.screen == "controls" then
+    draw_controls(width, height, fonts.title, fonts.body)
   elseif self.screen == "about" then
     draw_about(width, height, fonts.title, fonts.body)
   elseif self.screen == "intro" then
@@ -300,6 +335,8 @@ function Menu:update()
       if selected == "Iniciar" then
         self.intro_page = 1
         self.screen = "intro"
+      elseif selected == "Controles" then
+        self.screen = "controls"
       elseif selected == "Sobre" then
         self.screen = "about"
       elseif selected == "Sair" then
@@ -308,7 +345,7 @@ function Menu:update()
     elseif input:pressed("back") then
       love.event.quit()
     end
-  elseif self.screen == "about" then
+  elseif self.screen == "about" or self.screen == "controls" then
     if input:pressed("confirm") or input:pressed("back") then
       self.screen = "menu"
     end

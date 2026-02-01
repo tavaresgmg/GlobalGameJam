@@ -6,6 +6,7 @@
 # Editor/IDE
 .vscode/
 .idea/
+.serena/
 
 # Love2D build artifacts
 *.love
