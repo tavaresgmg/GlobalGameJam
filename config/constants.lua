@@ -3,6 +3,7 @@ local constants = {
   world = {
     background_height = 1080,
     ground_height = 342,
+    ground_top = 738,
   },
   player = {
     speed = 260,

@@ -134,6 +134,7 @@ function Level:enter()
     platforms = level_data.platforms,
   }
   self.background = level_data.background
+  self.ground_top = level_data.ground_top or 0
   self.collision_world = Collision.new_world(32)
 
   local floor_y = level_data.floor_y
@@ -377,7 +378,7 @@ local function draw_layer(image, world_width, world_height, camera, speed)
   end
 end
 
-local function draw_ground_layer(image, world_width, floor_y, camera, scale)
+local function draw_ground_layer(image, world_width, floor_y, camera, scale, top_offset)
   if not image then
     return
   end
@@ -387,7 +388,7 @@ local function draw_ground_layer(image, world_width, floor_y, camera, scale)
   end
   local used_scale = scale or 1
   local scaled_w = iw * used_scale
-  local y = floor_y
+  local y = floor_y - (top_offset or 0) * used_scale
   local x = -camera.x
   local start_x = -x % scaled_w - scaled_w
   for draw_x = start_x, world_width + scaled_w, scaled_w do
@@ -608,7 +609,14 @@ function Level:draw()
   if self.background and self.background.ground and self.assets and self.assets.backgrounds then
     local bucket = self.background.bucket and self.assets.backgrounds[self.background.bucket]
     local image = bucket and bucket[self.background.ground.key]
-    draw_ground_layer(image, self.world.width, floor_y, self.camera, background_scale)
+    draw_ground_layer(
+      image,
+      self.world.width,
+      floor_y,
+      self.camera,
+      background_scale,
+      self.ground_top
+    )
   else
     love.graphics.setColor(0.2, 0.2, 0.2)
     for _, platform in ipairs(self.world.platforms) do

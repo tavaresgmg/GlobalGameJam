@@ -186,6 +186,7 @@ local function build_level_data(data, level_index)
     unmask_trigger = unmask_trigger,
     segments = segments,
     floor_y = data.floor_y,
+    ground_top = data.ground_top,
     pickup_spawns = pickup_spawns,
     boss_spawns = boss_spawns,
     boss_limit_x = boss_limit_x,
@@ -197,6 +198,7 @@ function LevelBase.build(settings, constants, level_index)
   local background_height = (constants.world and constants.world.background_height)
     or settings.height
   local ground_height = (constants.world and constants.world.ground_height) or 40
+  local ground_top = (constants.world and constants.world.ground_top) or 0
   local scale = settings.height / background_height
   local floor_y = settings.height - (ground_height * scale)
 
@@ -355,6 +357,7 @@ function LevelBase.build(settings, constants, level_index)
     unmask_trigger = unmask_trigger,
     segments = segments,
     floor_y = floor_y,
+    ground_top = ground_top,
     pickup_spawns = pickup_spawns,
     boss_spawns = boss_spawns,
   }
