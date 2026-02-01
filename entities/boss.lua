@@ -48,16 +48,12 @@ function Boss.new(definition, x, y, width, height)
   self.charge_timer = 0
   self.charge_cooldown_timer = 0
   self.is_charging = false
-  self.patrol_left = x - 120
-  self.patrol_right = x + 120
+  self.home_x = x
+  self.home_y = y
+  self.leash_range = definition.leash_range
   self.agro_range = definition.agro_range
   self.flash_timer = 0
   return self
-end
-
-function Boss:set_patrol_bounds(left_bound, right_bound)
-  self.patrol_left = left_bound
-  self.patrol_right = right_bound
 end
 
 function Boss:update_behavior(player, dt, agro_range)
@@ -86,8 +82,11 @@ function Boss:update_behavior(player, dt, agro_range)
   local dx = (player.x + player.w / 2) - (self.x + self.w / 2)
   local distance = math.abs(dx)
   local chase_range = self.agro_range or agro_range or (self.charge_range * 1.6)
+  local leash_range = self.leash_range or (chase_range * 1.8)
+  local home_dx = self.home_x - self.x
+  local home_distance = math.abs(home_dx)
 
-  if distance <= self.charge_range and self.charge_cooldown_timer <= 0 then
+  if distance <= chase_range and distance <= self.charge_range and self.charge_cooldown_timer <= 0 then
     self.is_charging = true
     self.charge_timer = 0.5
     self.dir = dx >= 0 and 1 or -1
@@ -95,15 +94,22 @@ function Boss:update_behavior(player, dt, agro_range)
   end
 
   if distance <= chase_range then
-    self.dir = dx >= 0 and 1 or -1
+    local preferred = self.charge_range * 0.75
+    if distance < preferred then
+      self.dir = dx >= 0 and -1 or 1
+    else
+      self.dir = dx >= 0 and 1 or -1
+    end
+  else
+    if home_distance > 6 then
+      self.dir = home_dx >= 0 and 1 or -1
+    else
+      self.dir = 0
+    end
   end
 
-  if self.x < self.patrol_left then
-    self.x = self.patrol_left
-    self.dir = 1
-  elseif self.x + self.w > self.patrol_right then
-    self.x = self.patrol_right - self.w
-    self.dir = -1
+  if home_distance > leash_range then
+    self.dir = home_dx >= 0 and 1 or -1
   end
 end
 

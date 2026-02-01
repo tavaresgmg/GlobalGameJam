@@ -99,9 +99,6 @@ function Level01:enter()
     boss.damage = constants.boss.damage
     Collision.add(self.collision_world, boss)
   end
-  self.bosses[1]:set_patrol_bounds(1600, 1840)
-  self.bosses[2]:set_patrol_bounds(2820, 3040)
-  self.bosses[3]:set_patrol_bounds(4020, 4240)
 
   self.final_boss = self.bosses[#self.bosses]
 
