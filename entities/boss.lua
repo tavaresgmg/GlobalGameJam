@@ -402,7 +402,12 @@ function Boss:draw()
     love.graphics.rectangle("fill", self.x, self.y, self.w, self.h)
   end
 
-  local bar_y = self.y - 35
+  local frame_h = self.anim_walk_h or self.anim_attack_h or self.h
+  local scale = self.sprite_scale or 1
+  local offset_y = self.sprite_offset_y or 0
+  local sprite_top = self.y + self.h + offset_y - (frame_h * scale)
+  
+  local bar_y = sprite_top + 90
   local bar_w = self.w
   local bar_x = self.x + self.w / 2 - bar_w / 2
   draw_bar(bar_x, bar_y, bar_w, 4, self.health, self.max_health, { 0.9, 0.2, 0.6 })

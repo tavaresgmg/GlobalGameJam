@@ -82,7 +82,7 @@ local bosses = {
     is_final = true,
     sprite_walk_folder = "boss_final_walk",
     sprite_attack_folder = "boss_final_attack",
-    sprite_scale_mult = 2.8,
+    sprite_scale_mult = 5.6,
     sprite_margin_bottom = 130,
     sprite_flip = true,
   },
