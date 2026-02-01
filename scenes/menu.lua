@@ -1,16 +1,25 @@
 local Level01 = require("scenes.level01")
+local UI = require("config.ui")
 
 local Menu = {}
 Menu.__index = Menu
 
-local function load_font(assets, name, size)
-  if assets and assets.fonts and assets.fonts[name] then
-    local font_factory = assets.fonts[name]
+local MENU_COLORS = UI.colors.menu
+local MENU_FONTS = UI.fonts.menu
+local MENU_LAYOUT = UI.layout.menu
+
+local function set_color(color)
+  love.graphics.setColor(color[1], color[2], color[3], color[4] or 1)
+end
+
+local function load_font(assets, font_def)
+  if assets and assets.fonts and font_def and font_def.name then
+    local font_factory = assets.fonts[font_def.name]
     if type(font_factory) == "function" then
-      return font_factory(size)
+      return font_factory(font_def.size)
     end
   end
-  return love.graphics.newFont(size)
+  return love.graphics.newFont((font_def and font_def.size) or 12)
 end
 
 function Menu.new(context)
@@ -20,54 +29,58 @@ function Menu.new(context)
   self.items = { "Iniciar", "Sobre", "Sair" }
   self.selected_index = 1
   self.fonts = {
-    title = load_font(self.context.assets, "SpaceMono-Bold", 36),
-    subtitle = load_font(self.context.assets, "SpaceMono-Regular", 16),
-    menu = load_font(self.context.assets, "SpaceMono-Regular", 22),
-    footer = load_font(self.context.assets, "SpaceMono-Regular", 12),
-    body = load_font(self.context.assets, "SpaceMono-Regular", 16),
+    title = load_font(self.context.assets, MENU_FONTS.title),
+    subtitle = load_font(self.context.assets, MENU_FONTS.subtitle),
+    menu = load_font(self.context.assets, MENU_FONTS.menu),
+    footer = load_font(self.context.assets, MENU_FONTS.footer),
+    body = load_font(self.context.assets, MENU_FONTS.body),
   }
   return self
 end
 
 local function draw_background(width, height)
-  love.graphics.setColor(0.05, 0.06, 0.08)
+  set_color(MENU_COLORS.background)
   love.graphics.rectangle("fill", 0, 0, width, height)
-  love.graphics.setColor(0.2, 0.2, 0.3, 0.5)
-  love.graphics.rectangle("line", 24, 24, width - 48, height - 48, 12, 12)
+  set_color(MENU_COLORS.border)
+  love.graphics.rectangle(
+    "line",
+    MENU_LAYOUT.border_padding,
+    MENU_LAYOUT.border_padding,
+    width - MENU_LAYOUT.border_padding * 2,
+    height - MENU_LAYOUT.border_padding * 2,
+    MENU_LAYOUT.border_radius,
+    MENU_LAYOUT.border_radius
+  )
 end
 
 local function draw_title(width, title_font, subtitle_font)
   love.graphics.setFont(title_font)
-  love.graphics.setColor(0.95, 0.95, 0.95)
-  love.graphics.printf("Jogo das Mascaras", 0, 90, width, "center")
+  set_color(MENU_COLORS.title)
+  love.graphics.printf("Jogo das Mascaras", 0, MENU_LAYOUT.title_y, width, "center")
 
   love.graphics.setFont(subtitle_font)
-  love.graphics.setColor(0.7, 0.7, 0.75)
-  love.graphics.printf("Goias distopico. Escolha seu caminho.", 0, 140, width, "center")
+  set_color(MENU_COLORS.subtitle)
+  love.graphics.printf("Goias distopico. Escolha seu caminho.", 0, MENU_LAYOUT.subtitle_y, width, "center")
 end
 
 local function draw_menu_list(width, y, items, selected_index, font)
   love.graphics.setFont(font)
   for i, label in ipairs(items) do
     local is_selected = i == selected_index
-    love.graphics.setColor(
-      is_selected and 1 or 0.7,
-      is_selected and 1 or 0.7,
-      is_selected and 1 or 0.7
-    )
+    set_color(is_selected and MENU_COLORS.item_selected or MENU_COLORS.item)
     local prefix = is_selected and "> " or "  "
     love.graphics.printf(prefix .. label, 0, y, width, "center")
-    y = y + 36
+    y = y + MENU_LAYOUT.menu_line_h
   end
 end
 
 local function draw_footer(width, font)
   love.graphics.setFont(font)
-  love.graphics.setColor(0.6, 0.6, 0.65)
+  set_color(MENU_COLORS.footer)
   love.graphics.printf(
     "Setas/WASD para mover | Enter/Espaco para selecionar | Esc para sair",
     0,
-    420,
+    MENU_LAYOUT.footer_y,
     width,
     "center"
   )
@@ -75,20 +88,20 @@ end
 
 local function draw_about(width, height, title_font, body_font)
   love.graphics.setFont(title_font)
-  love.graphics.setColor(0.95, 0.95, 0.95)
-  love.graphics.printf("Sobre", 0, 100, width, "center")
+  set_color(MENU_COLORS.title)
+  love.graphics.printf("Sobre", 0, MENU_LAYOUT.about_title_y, width, "center")
 
   love.graphics.setFont(body_font)
-  love.graphics.setColor(0.7, 0.7, 0.75)
+  set_color(MENU_COLORS.about_body)
   love.graphics.printf(
     "O Coronel Supremo domina por mascaras.\nVoce comeca mascarado e decide: absorver ou libertar.",
     0,
-    170,
+    MENU_LAYOUT.about_body_y,
     width,
     "center"
   )
-  love.graphics.setColor(0.6, 0.6, 0.65)
-  love.graphics.printf("Enter/Esc para voltar", 0, height - 90, width, "center")
+  set_color(MENU_COLORS.about_footer)
+  love.graphics.printf("Enter/Esc para voltar", 0, height - MENU_LAYOUT.about_footer_offset, width, "center")
 end
 
 function Menu:draw()
@@ -100,7 +113,7 @@ function Menu:draw()
 
   if self.screen == "menu" then
     draw_title(width, fonts.title, fonts.subtitle)
-    draw_menu_list(width, 220, self.items, self.selected_index, fonts.menu)
+    draw_menu_list(width, MENU_LAYOUT.menu_start_y, self.items, self.selected_index, fonts.menu)
     draw_footer(width, fonts.footer)
   else
     draw_about(width, height, fonts.title, fonts.body)

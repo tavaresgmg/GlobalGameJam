@@ -12,7 +12,10 @@ local function start_dash(player)
 end
 
 local function try_jump(player)
-  if player.jump_count < player.max_jumps and (player.on_ground or player.coyote_timer > 0) then
+  if
+    player.jump_count < player.max_jumps
+    and (player.on_ground or player.coyote_timer > 0 or player.jump_count > 0)
+  then
     player.vy = -player.jump_speed
     player.on_ground = false
     player.jump_count = player.jump_count + 1

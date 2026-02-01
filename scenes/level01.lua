@@ -3,15 +3,17 @@ local Player = require("entities.player")
 local Enemy = require("entities.enemy")
 local Boss = require("entities.boss")
 local Pickup = require("entities.pickup")
-local MaskDrop = require("entities.mask_drop")
 local Movement = require("systems.movement")
 local Combat = require("systems.combat")
+local Collectables = require("systems.collectables")
 local Hud = require("ui.hud")
 local AI = require("systems.ai")
 local Abilities = require("systems.abilities")
 local Progression = require("systems.progression")
 local Health = require("systems.health")
 local Collision = require("systems.collision")
+local Triggers = require("systems.triggers")
+local LevelData = require("data.level01")
 local BossDefs = require("data.bosses")
 local AbilityDefs = require("data.abilities")
 local EnemyDefs = require("data.enemies")
@@ -33,20 +35,17 @@ end
 function Level01:enter()
   local settings = self.context.settings
   local constants = self.context.constants
+  local level_data = LevelData.build(settings, constants)
 
   self.world = {
-    width = settings.width * 3,
-    height = settings.height,
-    gravity = constants.gravity,
-    platforms = {},
+    width = level_data.world.width,
+    height = level_data.world.height,
+    gravity = level_data.world.gravity,
+    platforms = level_data.platforms,
   }
   self.collision_world = Collision.new_world(32)
 
-  local floor_y = settings.height - 40
-  table.insert(self.world.platforms, { x = 0, y = floor_y, w = self.world.width, h = 40 })
-  table.insert(self.world.platforms, { x = 280, y = floor_y - 120, w = 140, h = 20 })
-  table.insert(self.world.platforms, { x = 620, y = floor_y - 200, w = 160, h = 20 })
-  table.insert(self.world.platforms, { x = 980, y = floor_y - 140, w = 160, h = 20 })
+  local floor_y = level_data.floor_y
   for _, platform in ipairs(self.world.platforms) do
     platform.tag = "platform"
     platform.is_trigger = false
@@ -54,7 +53,7 @@ function Level01:enter()
     Collision.add(self.collision_world, platform)
   end
 
-  self.spawn = { x = 80, y = floor_y - constants.player.height }
+  self.spawn = level_data.spawn
   self.player = Player.new(self.spawn.x, self.spawn.y, constants.player)
   self.player.on_ground = true
   Collision.add(self.collision_world, self.player)
@@ -62,12 +61,28 @@ function Level01:enter()
   Abilities.init_player(self.player)
   Progression.init_player(self.player)
 
-  self.enemies = {
-    Enemy.new(320, floor_y - EnemyDefs.grunt.height, EnemyDefs.grunt, 240, 460),
-    Enemy.new(520, floor_y - EnemyDefs.rusher.height, EnemyDefs.rusher, 480, 640),
-    Enemy.new(760, floor_y - EnemyDefs.grunt.height, EnemyDefs.grunt, 700, 900),
-    Enemy.new(1120, floor_y - EnemyDefs.mini_boss.height, EnemyDefs.mini_boss, 1080, 1260),
-  }
+  local function build_enemy_spawns(spawn_defs)
+    local enemies = {}
+    for _, spawn in ipairs(spawn_defs or {}) do
+      local def = EnemyDefs[spawn.kind]
+      if def then
+        local platform = spawn.platform and self.world.platforms[spawn.platform] or nil
+        local y = spawn.y
+          or (platform and (platform.y - def.height))
+          or (floor_y - def.height)
+        local left_bound = spawn.left
+          or (platform and platform.x)
+          or (spawn.x - 80)
+        local right_bound = spawn.right
+          or (platform and (platform.x + platform.w))
+          or (spawn.x + 80)
+        table.insert(enemies, Enemy.new(spawn.x, y, def, left_bound, right_bound))
+      end
+    end
+    return enemies
+  end
+
+  self.enemies = build_enemy_spawns(level_data.enemy_spawns)
   for _, enemy in ipairs(self.enemies) do
     Collision.add(self.collision_world, enemy)
   end
@@ -76,24 +91,28 @@ function Level01:enter()
   local boss_height = constants.boss.height
 
   self.bosses = {
-    Boss.new(BossDefs[1], 1500, floor_y - boss_height, boss_width, boss_height),
-    Boss.new(BossDefs[2], 1850, floor_y - boss_height, boss_width, boss_height),
-    Boss.new(BossDefs[3], 2300, floor_y - boss_height, boss_width, boss_height),
+    Boss.new(BossDefs[1], 1700, floor_y - boss_height, boss_width, boss_height),
+    Boss.new(BossDefs[2], 2900, floor_y - boss_height, boss_width, boss_height),
+    Boss.new(BossDefs[3], 4100, floor_y - boss_height, boss_width, boss_height),
   }
   for _, boss in ipairs(self.bosses) do
     boss.damage = constants.boss.damage
     Collision.add(self.collision_world, boss)
   end
-  self.bosses[1]:set_patrol_bounds(1420, 1640)
-  self.bosses[2]:set_patrol_bounds(1760, 1980)
-  self.bosses[3]:set_patrol_bounds(2180, 2450)
+  self.bosses[1]:set_patrol_bounds(1600, 1840)
+  self.bosses[2]:set_patrol_bounds(2820, 3040)
+  self.bosses[3]:set_patrol_bounds(4020, 4240)
 
   self.final_boss = self.bosses[#self.bosses]
 
   self.pickups = {
-    Pickup.new(420, floor_y - 80, constants.pickup.heal_amount),
-    Pickup.new(1100, floor_y - 80, constants.pickup.heal_amount),
-    Pickup.new(1780, floor_y - 80, constants.pickup.heal_amount),
+    Pickup.new(520, floor_y - 80, constants.pickup.heal_amount),
+    Pickup.new(1320, floor_y - 80, constants.pickup.heal_amount),
+    Pickup.new(2080, floor_y - 80, constants.pickup.heal_amount),
+    Pickup.new(2760, floor_y - 80, constants.pickup.heal_amount),
+    Pickup.new(3440, floor_y - 80, constants.pickup.heal_amount),
+    Pickup.new(4080, floor_y - 80, constants.pickup.heal_amount),
+    Pickup.new(4680, floor_y - 80, constants.pickup.heal_amount),
   }
   for _, pickup in ipairs(self.pickups) do
     Collision.add(self.collision_world, pickup)
@@ -101,48 +120,30 @@ function Level01:enter()
 
   self.mask_drops = {}
 
-  self.unmask_trigger = {
-    x = 1240,
-    y = floor_y - 80,
-    w = 60,
-    h = 60,
-    used = false,
-    tag = "unmask",
-    is_trigger = true,
-    in_world = false,
-  }
+  self.unmask_trigger = level_data.unmask_trigger
   Collision.add(self.collision_world, self.unmask_trigger)
 
-  self.segments = {
-    {
-      start_x = 0,
-      gate_x = 980,
-      locked = true,
-      enemies = { self.enemies[1], self.enemies[2], self.enemies[3] },
-      bosses = {},
-    },
-    {
-      start_x = 980,
-      gate_x = 1500,
-      locked = true,
-      enemies = { self.enemies[4] },
-      bosses = {},
-    },
-    {
-      start_x = 1500,
-      gate_x = 2100,
-      locked = true,
-      enemies = {},
-      bosses = { self.bosses[1], self.bosses[2] },
-    },
-    {
-      start_x = 2100,
-      gate_x = 2600,
-      locked = true,
-      enemies = {},
-      bosses = { self.bosses[3] },
-    },
-  }
+  local function resolve_entities(list, ids)
+    local items = {}
+    for _, id in ipairs(ids or {}) do
+      local entity = list[id]
+      if entity then
+        table.insert(items, entity)
+      end
+    end
+    return items
+  end
+
+  self.segments = {}
+  for _, segment_def in ipairs(level_data.segments) do
+    table.insert(self.segments, {
+      start_x = segment_def.start_x,
+      gate_x = segment_def.gate_x,
+      locked = segment_def.locked,
+      enemies = resolve_entities(self.enemies, segment_def.enemy_ids),
+      bosses = resolve_entities(self.bosses, segment_def.boss_ids),
+    })
+  end
 
   self.camera = Camera(settings.width / 2, settings.height / 2)
 end
@@ -188,65 +189,18 @@ local function player_hit(player, damage, hurt_cooldown)
   return false
 end
 
-local function collect_pickups(player, pickups, collision_world)
-  local overlaps = Collision.query_rect(
-    collision_world,
-    player.x,
-    player.y,
-    player.w,
-    player.h,
-    function(item)
-      return item.tag == "pickup" and not item.collected
-    end
-  )
-
-  for _, pickup in ipairs(overlaps) do
-    pickup.collected = true
-    Collision.remove(collision_world, pickup)
-    Health.heal(player, pickup.amount)
-  end
+local function respawn_player(level)
+  level.player.health = level.player.max_health
+  level.player:reset(level.spawn.x, level.spawn.y)
+  Collision.sync(level.collision_world, level.player)
 end
 
-local function collect_mask_drops(player, drops, ability_defs, collision_world)
-  local overlaps = Collision.query_rect(
-    collision_world,
-    player.x,
-    player.y,
-    player.w,
-    player.h,
-    function(item)
-      return item.tag == "mask_drop" and not item.collected
-    end
-  )
-
-  for _, drop in ipairs(overlaps) do
-    drop.collected = true
-    Collision.remove(collision_world, drop)
-    Abilities.grant(player, drop.ability_id, ability_defs)
+local function clamp_player_to_world(level)
+  if level.player.x < 0 then
+    level.player.x = 0
+    level.player.vx = 0
+    Collision.sync(level.collision_world, level.player)
   end
-end
-
-local function spawn_mask_drop(level, boss, ability_id)
-  if not ability_id then
-    return
-  end
-  local drop = MaskDrop.new(boss.x + boss.w / 2 - 9, boss.y - 20, ability_id)
-  table.insert(level.mask_drops, drop)
-  Collision.add(level.collision_world, drop)
-end
-
-local function player_overlaps_trigger(level, trigger)
-  local overlaps = Collision.query_rect(
-    level.collision_world,
-    level.player.x,
-    level.player.y,
-    level.player.w,
-    level.player.h,
-    function(item)
-      return item == trigger
-    end
-  )
-  return #overlaps > 0
 end
 
 local function build_messages(level)
@@ -263,7 +217,7 @@ local function build_messages(level)
   if
     unmask_trigger
     and not unmask_trigger.used
-    and player_overlaps_trigger(level, unmask_trigger)
+    and Triggers.overlaps(level.collision_world, player, unmask_trigger)
   then
     table.insert(messages, "Pressione E para libertar sua mascara.")
   end
@@ -319,6 +273,7 @@ function Level01:update(dt)
   Movement.update_player(self.player, self.context.input, self.world, self.collision_world, dt)
   Movement.update_enemies(self.enemies, self.world, self.collision_world, dt)
   Movement.update_enemies(self.bosses, self.world, self.collision_world, dt)
+  clamp_player_to_world(self)
 
   Combat.update(
     self.player,
@@ -341,34 +296,38 @@ function Level01:update(dt)
     "boss"
   )
 
-  collect_pickups(self.player, self.pickups, self.collision_world)
-  collect_mask_drops(self.player, self.mask_drops, AbilityDefs, self.collision_world)
+  Collectables.collect_pickups(self.player, self.pickups, self.collision_world)
+  Collectables.collect_mask_drops(self.player, self.mask_drops, AbilityDefs, self.collision_world)
 
-  if
-    not self.unmask_trigger.used
-    and self.player.mode == "offensive"
-    and player_overlaps_trigger(self, self.unmask_trigger)
-    and self.context.input:pressed("interact")
-  then
-    self.player:unmask()
-    self.unmask_trigger.used = true
-    Collision.remove(self.collision_world, self.unmask_trigger)
-  end
+  Triggers.try_unmask(self.player, self.unmask_trigger, self.collision_world, self.context.input)
 
   local enemy_hits = collect_contacts(self, function(item)
     return item.is_enemy and item.alive
   end)
+  local player_died = false
   for enemy in pairs(enemy_hits) do
-    if enemy.active and enemy.attack_active then
-      player_hit(self.player, enemy.damage, self.context.constants.player.hurt_cooldown)
+    if enemy.active then
+      if player_hit(self.player, enemy.damage, self.context.constants.player.hurt_cooldown) then
+        player_died = true
+        break
+      end
     end
   end
 
-  local boss_hits = collect_contacts(self, function(item)
-    return item.is_boss and item.alive
-  end)
-  for boss in pairs(boss_hits) do
-    player_hit(self.player, boss.damage, self.context.constants.player.hurt_cooldown)
+  if not player_died then
+    local boss_hits = collect_contacts(self, function(item)
+      return item.is_boss and item.alive
+    end)
+    for boss in pairs(boss_hits) do
+      if player_hit(self.player, boss.damage, self.context.constants.player.hurt_cooldown) then
+        player_died = true
+        break
+      end
+    end
+  end
+
+  if player_died then
+    respawn_player(self)
   end
 
   for _, enemy in ipairs(self.enemies) do
@@ -381,7 +340,7 @@ function Level01:update(dt)
     if not boss.alive and not boss.drop_spawned then
       local reward = self.player.mode == "offensive" and boss.reward_offensive
         or boss.reward_defensive
-      spawn_mask_drop(self, boss, reward)
+      Collectables.spawn_mask_drop(self.mask_drops, self.collision_world, boss, reward)
       boss.drop_spawned = true
     end
     if not boss.alive and boss.in_world then

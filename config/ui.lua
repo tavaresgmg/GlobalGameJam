@@ -1,0 +1,73 @@
+local ui = {
+  fonts = {
+    hud = {
+      title = { name = "SpaceMono-Bold", size = 14 },
+      body = { name = "SpaceMono-Regular", size = 12 },
+      small = { name = "SpaceMono-Regular", size = 10 },
+    },
+    menu = {
+      title = { name = "SpaceMono-Bold", size = 36 },
+      subtitle = { name = "SpaceMono-Regular", size = 16 },
+      menu = { name = "SpaceMono-Regular", size = 22 },
+      footer = { name = "SpaceMono-Regular", size = 12 },
+      body = { name = "SpaceMono-Regular", size = 16 },
+    },
+  },
+  colors = {
+    hud = {
+      panel_fill = { 0.06, 0.07, 0.09, 0.78 },
+      panel_line = { 0.22, 0.26, 0.3, 0.85 },
+      bar_bg = { 0.12, 0.12, 0.12, 0.9 },
+      bar_line = { 1, 1, 1, 0.7 },
+      text_primary = { 0.9, 0.9, 0.9, 1 },
+      text_secondary = { 0.7, 0.7, 0.75, 1 },
+      abilities_title = { 0.85, 0.85, 0.9, 1 },
+      abilities_text = { 0.7, 0.7, 0.75, 1 },
+      special_ready = { 0.4, 0.95, 0.6, 1 },
+      special_wait = { 0.7, 0.7, 0.7, 1 },
+    },
+    menu = {
+      background = { 0.05, 0.06, 0.08, 1 },
+      border = { 0.2, 0.2, 0.3, 0.5 },
+      title = { 0.95, 0.95, 0.95, 1 },
+      subtitle = { 0.7, 0.7, 0.75, 1 },
+      item = { 0.7, 0.7, 0.7, 1 },
+      item_selected = { 1, 1, 1, 1 },
+      footer = { 0.6, 0.6, 0.65, 1 },
+      about_body = { 0.7, 0.7, 0.75, 1 },
+      about_footer = { 0.6, 0.6, 0.65, 1 },
+    },
+  },
+  layout = {
+    hud = {
+      padding = 12,
+      panel_w = 220,
+      panel_h = 50,
+      panel_radius = 8,
+      panel_inner = 10,
+      hp_text_offset = 60,
+      bar_y = 22,
+      bar_h = 6,
+      status_text_y = 8,
+      mode_text_y = 34,
+      abilities_w = 260,
+      abilities_header_y = 6,
+      abilities_text_y = 18,
+      abilities_line_h = 12,
+    },
+    menu = {
+      border_padding = 24,
+      border_radius = 12,
+      title_y = 90,
+      subtitle_y = 140,
+      menu_start_y = 220,
+      menu_line_h = 36,
+      footer_y = 420,
+      about_title_y = 100,
+      about_body_y = 170,
+      about_footer_offset = 90,
+    },
+  },
+}
+
+return ui

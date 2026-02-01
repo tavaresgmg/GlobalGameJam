@@ -26,7 +26,7 @@ local abilities = {
     name = "Escudo Libertador",
     type = "defensive",
     passive = {
-      max_health_bonus = 2,
+      max_health_bonus = 20,
     },
   },
   defensive_special_burst = {
