@@ -168,6 +168,13 @@ function AI.update(enemies, player, default_range, dt)
     if enemy.alive then
       local dx = (player.x + player.w / 2) - (enemy.x + enemy.w / 2)
       local distance = math.abs(dx)
+      if enemy.dir ~= 0 then
+        enemy.face_dir = enemy.dir
+      elseif enemy.face_lock_distance and distance > enemy.face_lock_distance then
+        enemy.face_dir = dx >= 0 and 1 or -1
+      elseif not enemy.face_dir then
+        enemy.face_dir = dx >= 0 and 1 or -1
+      end
       local contact_gap = math.max(0, distance - (player.w / 2 + enemy.w / 2))
       local standoff_range = enemy.standoff_range or (enemy.attack_range + 40)
       local standoff_buffer = enemy.standoff_buffer or 12
@@ -231,12 +238,13 @@ function AI.update(enemies, player, default_range, dt)
             enemy.evade_cooldown_timer = enemy.evade_cooldown or 0.9
             enter_state(enemy, "evade")
           else
-            if contact_gap < standoff_range - standoff_buffer then
-              enemy.dir = dx >= 0 and -1 or 1
-            elseif contact_gap > standoff_range + standoff_buffer then
+            local hold_range = (enemy.attack_range or 0) * 0.6
+            if contact_gap > standoff_range + standoff_buffer then
               enemy.dir = flank_dir(enemy, player)
+            elseif contact_gap < hold_range then
+              enemy.dir = 0
             else
-              enemy.dir = flank_dir(enemy, player)
+              enemy.dir = 0
             end
           end
         end

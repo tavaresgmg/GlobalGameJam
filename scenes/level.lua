@@ -163,7 +163,7 @@ function Level:enter()
         local right_bound = spawn.right
           or (platform and (platform.x + platform.w))
           or (spawn.x + 80)
-        local enemy = Enemy.new(spawn.x, y, def, left_bound, right_bound)
+        local enemy = Enemy.new(spawn.x, y, def, left_bound, right_bound, self.context.assets)
         if spawn.speed then
           enemy.vx = spawn.speed
         elseif spawn.speed_mult then
@@ -391,6 +391,9 @@ function Level:update(dt)
   self.player:update_animation(dt)
   Movement.update_enemies(self.enemies, self.world, self.collision_world, dt)
   Movement.update_enemies(self.bosses, self.world, self.collision_world, dt)
+  for _, enemy in ipairs(self.enemies) do
+    enemy:update_animation(dt)
+  end
   clamp_player_to_world(self)
 
   local attack_started = Combat.update(
