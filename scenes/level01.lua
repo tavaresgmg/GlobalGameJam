@@ -54,7 +54,7 @@ function Level01:enter()
   end
 
   self.spawn = level_data.spawn
-  self.player = Player.new(self.spawn.x, self.spawn.y, constants.player)
+  self.player = Player.new(self.spawn.x, self.spawn.y, constants.player, self.context.assets)
   self.player.on_ground = true
   Collision.add(self.collision_world, self.player)
 
@@ -259,6 +259,7 @@ function Level01:update(dt)
   end
 
   Movement.update_player(self.player, self.context.input, self.world, self.collision_world, dt)
+  self.player:update_animation(dt)
   Movement.update_enemies(self.enemies, self.world, self.collision_world, dt)
   Movement.update_enemies(self.bosses, self.world, self.collision_world, dt)
   clamp_player_to_world(self)
@@ -366,8 +367,8 @@ function Level01:update(dt)
   self.messages = build_messages(self)
 
   if self.context.input:pressed("pause") then
-    local Menu = require("scenes.menu")
-    self.context.state.switch(Menu.new(self.context))
+    local Pause = require("scenes.pause")
+    self.context.state.switch(Pause.new(self.context, self))
   end
 end
 
