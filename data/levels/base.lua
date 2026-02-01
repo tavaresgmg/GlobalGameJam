@@ -194,7 +194,11 @@ local function build_level_data(data, level_index)
 end
 
 function LevelBase.build(settings, constants, level_index)
-  local floor_y = settings.height - 40
+  local background_height = (constants.world and constants.world.background_height)
+    or settings.height
+  local ground_height = (constants.world and constants.world.ground_height) or 40
+  local scale = settings.height / background_height
+  local floor_y = settings.height - (ground_height * scale)
 
   local world = {
     width = settings.width * 5,
@@ -202,8 +206,9 @@ function LevelBase.build(settings, constants, level_index)
     gravity = constants.gravity,
   }
 
+  local floor_height = settings.height - floor_y
   local platforms = {
-    { x = 0, y = floor_y, w = world.width, h = 40 },
+    { x = 0, y = floor_y, w = world.width, h = floor_height },
     { x = 240, y = floor_y - 120, w = 140, h = 20 },
     { x = 540, y = floor_y - 200, w = 160, h = 20 },
     { x = 860, y = floor_y - 140, w = 160, h = 20 },
@@ -353,6 +358,49 @@ function LevelBase.build(settings, constants, level_index)
     pickup_spawns = pickup_spawns,
     boss_spawns = boss_spawns,
   }
+
+  local scale_x = 2
+  if scale_x and scale_x ~= 1 then
+    data.world.width = data.world.width * scale_x
+
+    for i, platform in ipairs(data.platforms or {}) do
+      platform.x = platform.x * scale_x
+      if i == 1 then
+        platform.w = data.world.width
+      end
+    end
+
+    if data.spawn then
+      data.spawn.x = data.spawn.x * scale_x
+    end
+
+    for _, spawn_def in ipairs(data.enemy_spawns or {}) do
+      spawn_def.x = spawn_def.x * scale_x
+      if spawn_def.left then
+        spawn_def.left = spawn_def.left * scale_x
+      end
+      if spawn_def.right then
+        spawn_def.right = spawn_def.right * scale_x
+      end
+    end
+
+    for _, pickup in ipairs(data.pickup_spawns or {}) do
+      pickup.x = pickup.x * scale_x
+    end
+
+    for _, boss in ipairs(data.boss_spawns or {}) do
+      boss.x = boss.x * scale_x
+    end
+
+    if data.unmask_trigger then
+      data.unmask_trigger.x = data.unmask_trigger.x * scale_x
+    end
+
+    for _, segment in ipairs(data.segments or {}) do
+      segment.start_x = segment.start_x * scale_x
+      segment.gate_x = segment.gate_x * scale_x
+    end
+  end
 
   if level_index then
     return build_level_data(data, level_index)

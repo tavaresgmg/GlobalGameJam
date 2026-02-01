@@ -1,5 +1,9 @@
 local constants = {
   gravity = 1400,
+  world = {
+    background_height = 1080,
+    ground_height = 342,
+  },
   player = {
     speed = 260,
     jump_speed = 520,

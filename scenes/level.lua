@@ -106,6 +106,7 @@ function Level.new(context, opts)
   local self = setmetatable({}, Level)
   opts = opts or {}
   self.context = context
+  self.assets = self.context.assets
   self.hud = Hud.new(self.context.assets)
   self.particles = Particles.new()
   self.messages = {}
@@ -132,6 +133,7 @@ function Level:enter()
     gravity = level_data.world.gravity,
     platforms = level_data.platforms,
   }
+  self.background = level_data.background
   self.collision_world = Collision.new_world(32)
 
   local floor_y = level_data.floor_y
@@ -143,8 +145,7 @@ function Level:enter()
   end
 
   self.spawn = level_data.spawn
-  self.player =
-    Player.new(self.spawn.x, self.spawn.y, constants.player, self.context.assets, WeaponDefs)
+  self.player = Player.new(self.spawn.x, self.spawn.y, constants.player, self.assets, WeaponDefs)
   self.player.on_ground = true
   Collision.add(self.collision_world, self.player)
 
@@ -163,7 +164,7 @@ function Level:enter()
         local right_bound = spawn.right
           or (platform and (platform.x + platform.w))
           or (spawn.x + 80)
-        local enemy = Enemy.new(spawn.x, y, def, left_bound, right_bound, self.context.assets)
+        local enemy = Enemy.new(spawn.x, y, def, left_bound, right_bound, self.assets)
         if spawn.speed then
           enemy.vx = spawn.speed
         elseif spawn.speed_mult then
@@ -359,6 +360,41 @@ local function entity_hits_player(entity, player)
   return false
 end
 
+local function draw_layer(image, world_width, world_height, camera, speed)
+  if not image then
+    return
+  end
+  local iw, ih = image:getWidth(), image:getHeight()
+  if iw <= 0 or ih <= 0 then
+    return
+  end
+  local scale = world_height / ih
+  local scaled_w = iw * scale
+  local x = camera.x * (speed or 1)
+  local start_x = -x % scaled_w - scaled_w
+  for draw_x = start_x, world_width + scaled_w, scaled_w do
+    love.graphics.draw(image, draw_x, 0, 0, scale, scale)
+  end
+end
+
+local function draw_ground_layer(image, world_width, floor_y, camera, scale)
+  if not image then
+    return
+  end
+  local iw, ih = image:getWidth(), image:getHeight()
+  if iw <= 0 or ih <= 0 then
+    return
+  end
+  local used_scale = scale or 1
+  local scaled_w = iw * used_scale
+  local y = floor_y
+  local x = -camera.x
+  local start_x = -x % scaled_w - scaled_w
+  for draw_x = start_x, world_width + scaled_w, scaled_w do
+    love.graphics.draw(image, draw_x, y, 0, used_scale, used_scale)
+  end
+end
+
 function Level:update(dt)
   update_timers(self, dt)
 
@@ -536,9 +572,32 @@ function Level:draw()
   self.camera:attach()
 
   love.graphics.clear(0.08, 0.1, 0.12)
-  love.graphics.setColor(0.2, 0.2, 0.2)
-  for _, platform in ipairs(self.world.platforms) do
-    love.graphics.rectangle("fill", platform.x, platform.y, platform.w, platform.h)
+  love.graphics.setColor(1, 1, 1)
+  local background_scale = nil
+  if self.background and self.background.layers then
+    local bucket = self.assets
+      and self.assets.backgrounds
+      and self.background.bucket
+      and self.assets.backgrounds[self.background.bucket]
+    for index, layer in ipairs(self.background.layers) do
+      local image = bucket and bucket[layer.key]
+      if index == 1 and image then
+        background_scale = self.world.height / image:getHeight()
+      end
+      draw_layer(image, self.world.width, self.world.height, self.camera, layer.speed or 1)
+    end
+  end
+
+  local floor_y = self.world.platforms[1] and self.world.platforms[1].y or self.world.height
+  if self.background and self.background.ground and self.assets and self.assets.backgrounds then
+    local bucket = self.background.bucket and self.assets.backgrounds[self.background.bucket]
+    local image = bucket and bucket[self.background.ground.key]
+    draw_ground_layer(image, self.world.width, floor_y, self.camera, background_scale)
+  else
+    love.graphics.setColor(0.2, 0.2, 0.2)
+    for _, platform in ipairs(self.world.platforms) do
+      love.graphics.rectangle("fill", platform.x, platform.y, platform.w, platform.h)
+    end
   end
 
   if self.unmask_trigger and not self.unmask_trigger.used then
