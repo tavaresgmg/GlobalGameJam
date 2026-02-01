@@ -189,10 +189,8 @@ local function player_hit(player, damage, hurt_cooldown)
   return false
 end
 
-local function respawn_player(level)
-  level.player.health = level.player.max_health
-  level.player:reset(level.spawn.x, level.spawn.y)
-  Collision.sync(level.collision_world, level.player)
+local function restart_level(level)
+  level.context.state.switch(Level01.new(level.context))
 end
 
 local function clamp_player_to_world(level)
@@ -327,7 +325,8 @@ function Level01:update(dt)
   end
 
   if player_died then
-    respawn_player(self)
+    restart_level(self)
+    return
   end
 
   for _, enemy in ipairs(self.enemies) do
@@ -374,8 +373,8 @@ function Level01:update(dt)
   end
 
   if self.player.y > self.world.height + 200 then
-    self.player:reset(self.spawn.x, self.spawn.y)
-    Collision.sync(self.collision_world, self.player)
+    restart_level(self)
+    return
   end
 
   self.messages = build_messages(self)
