@@ -234,26 +234,13 @@ local function segment_cleared(segment)
   return true
 end
 
-local function collect_contacts(level, predicate)
-  local hits = {}
-  local function scan(cols)
-    for _, col in ipairs(cols or {}) do
-      local other = col.other
-      if other and predicate(other) then
-        hits[other] = true
-      end
+local function entity_hits_player(entity, player)
+  for _, col in ipairs(entity.collisions or {}) do
+    if col.other == player then
+      return true
     end
   end
-
-  scan(level.player.collisions)
-  for _, enemy in ipairs(level.enemies) do
-    scan(enemy.collisions)
-  end
-  for _, boss in ipairs(level.bosses) do
-    scan(boss.collisions)
-  end
-
-  return hits
+  return false
 end
 
 function Level01:update(dt)
@@ -296,12 +283,9 @@ function Level01:update(dt)
 
   Triggers.try_unmask(self.player, self.unmask_trigger, self.collision_world, self.context.input)
 
-  local enemy_hits = collect_contacts(self, function(item)
-    return item.is_enemy and item.alive
-  end)
   local player_died = false
-  for enemy in pairs(enemy_hits) do
-    if enemy.active then
+  for _, enemy in ipairs(self.enemies) do
+    if enemy.alive and enemy.active and entity_hits_player(enemy, self.player) then
       if player_hit(self.player, enemy.damage, self.context.constants.player.hurt_cooldown) then
         player_died = true
         break
@@ -310,13 +294,12 @@ function Level01:update(dt)
   end
 
   if not player_died then
-    local boss_hits = collect_contacts(self, function(item)
-      return item.is_boss and item.alive
-    end)
-    for boss in pairs(boss_hits) do
-      if player_hit(self.player, boss.damage, self.context.constants.player.hurt_cooldown) then
-        player_died = true
-        break
+    for _, boss in ipairs(self.bosses) do
+      if boss.alive and entity_hits_player(boss, self.player) then
+        if player_hit(self.player, boss.damage, self.context.constants.player.hurt_cooldown) then
+          player_died = true
+          break
+        end
       end
     end
   end
