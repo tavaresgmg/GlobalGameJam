@@ -5,6 +5,7 @@ local Boss = require("entities.boss")
 local Pickup = require("entities.pickup")
 local Movement = require("systems.movement")
 local Combat = require("systems.combat")
+local Particles = require("systems.particles")
 local Collectables = require("systems.collectables")
 local Hud = require("ui.hud")
 local AI = require("systems.ai")
@@ -25,6 +26,7 @@ function Level01.new(context)
   local self = setmetatable({}, Level01)
   self.context = context
   self.hud = Hud.new(self.context.assets)
+  self.particles = Particles.new()
   self.messages = {}
   self.final_triggered = false
   self.segments = {}
@@ -174,22 +176,25 @@ local function update_timers(level, dt)
   end
 end
 
-local function player_hit(player, damage, hurt_cooldown)
+local function player_hit(level, player, damage, hurt_cooldown)
   if player.hurt_timer > 0 then
-    return false
+    return false, false
   end
 
   local died = Health.damage(player, damage)
   player.hurt_timer = hurt_cooldown
   player.invulnerable_timer = math.max(player.invulnerable_timer, hurt_cooldown)
   player.flash_timer = hurt_cooldown
+  if level and level.particles then
+    level.particles:emit_damage(player.x + player.w / 2, player.y + player.h / 2)
+  end
 
   if died then
     player.health = player.max_health
-    return true
+    return true, true
   end
 
-  return false
+  return false, true
 end
 
 local function restart_level(level)
@@ -264,7 +269,7 @@ function Level01:update(dt)
   Movement.update_enemies(self.bosses, self.world, self.collision_world, dt)
   clamp_player_to_world(self)
 
-  Combat.update(
+  local attack_started = Combat.update(
     self.player,
     self.context.input,
     self.enemies,
@@ -274,7 +279,7 @@ function Level01:update(dt)
     self.collision_world,
     "enemy"
   )
-  Combat.update(
+  attack_started = Combat.update(
     self.player,
     self.context.input,
     self.bosses,
@@ -283,7 +288,14 @@ function Level01:update(dt)
     dt,
     self.collision_world,
     "boss"
-  )
+  ) or attack_started
+
+  if attack_started and self.particles then
+    local range = self.context.constants.player.attack_range
+    local px = self.player.x + self.player.w / 2 + (range * 0.6) * self.player.dir
+    local py = self.player.y + self.player.h / 2
+    self.particles:emit_attack(px, py, self.player.dir)
+  end
 
   Collectables.collect_pickups(self.player, self.pickups, self.collision_world)
   Collectables.collect_mask_drops(self.player, self.mask_drops, AbilityDefs, self.collision_world)
@@ -293,7 +305,8 @@ function Level01:update(dt)
   local player_died = false
   for _, enemy in ipairs(self.enemies) do
     if enemy.alive and enemy.active and entity_hits_player(enemy, self.player) then
-      if player_hit(self.player, enemy.damage, self.context.constants.player.hurt_cooldown) then
+      local died = player_hit(self, self.player, enemy.damage, self.context.constants.player.hurt_cooldown)
+      if died then
         player_died = true
         break
       end
@@ -303,7 +316,8 @@ function Level01:update(dt)
   if not player_died then
     for _, boss in ipairs(self.bosses) do
       if boss.alive and entity_hits_player(boss, self.player) then
-        if player_hit(self.player, boss.damage, self.context.constants.player.hurt_cooldown) then
+        local died = player_hit(self, self.player, boss.damage, self.context.constants.player.hurt_cooldown)
+        if died then
           player_died = true
           break
         end
@@ -370,6 +384,10 @@ function Level01:update(dt)
     local Pause = require("scenes.pause")
     self.context.state.switch(Pause.new(self.context, self))
   end
+
+  if self.particles then
+    self.particles:update(dt)
+  end
 end
 
 function Level01:draw()
@@ -426,10 +444,8 @@ function Level01:draw()
 
   self.player:draw()
 
-  if self.player.attack_timer > 0 then
-    local hitbox = self.player:attack_box(self.context.constants.player)
-    love.graphics.setColor(1, 0.8, 0.2, 0.5)
-    love.graphics.rectangle("fill", hitbox.x, hitbox.y, hitbox.w, hitbox.h)
+  if self.particles then
+    self.particles:draw()
   end
 
   self.camera:detach()
