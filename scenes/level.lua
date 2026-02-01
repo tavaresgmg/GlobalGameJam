@@ -457,7 +457,17 @@ function Level:update(dt)
     local weapon = self.player:current_weapon()
     local range = (weapon and weapon.attack_range) or self.context.constants.player.attack_range
     local px = self.player.x + self.player.w / 2 + (range * 0.6) * self.player.dir
-    local py = self.player.y + self.player.h / 2
+    local py
+    if self.player.sprite_scale and self.player.sprite_frame_h then
+      local sprite_h = self.player.sprite_frame_h * self.player.sprite_scale
+      local sprite_top = self.player.y
+        + self.player.h
+        + (self.player.sprite_offset_y or 0)
+        - sprite_h
+      py = sprite_top + sprite_h * 0.63
+    else
+      py = self.player.y + self.player.h * 0.05
+    end
     self.particles:emit_attack(px, py, self.player.dir)
   end
 
@@ -471,6 +481,9 @@ function Level:update(dt)
     if enemy.alive and enemy.active and entity_hits_player(enemy, self.player) then
       local died =
         player_hit(self, self.player, enemy.damage, self.context.constants.player.hurt_cooldown)
+      if self.particles then
+        self.particles:emit_enemy_hit(enemy.x + enemy.w / 2, enemy.y + enemy.h * 0.4, enemy.dir)
+      end
       if died then
         player_died = true
         break
@@ -483,6 +496,9 @@ function Level:update(dt)
       if boss.alive and entity_hits_player(boss, self.player) then
         local died =
           player_hit(self, self.player, boss.damage, self.context.constants.player.hurt_cooldown)
+        if self.particles then
+          self.particles:emit_enemy_hit(boss.x + boss.w / 2, boss.y + boss.h * 0.4, boss.dir)
+        end
         if died then
           player_died = true
           break
