@@ -191,7 +191,7 @@ function Level:enter()
   for _, spawn in ipairs(level_data.boss_spawns or {}) do
     local def = BossDefs[spawn.boss_index]
     if def then
-      local boss = Boss.new(def, spawn.x, floor_y - boss_height, boss_width, boss_height)
+      local boss = Boss.new(def, spawn.x, floor_y - boss_height, boss_width, boss_height, self.assets)
       table.insert(self.bosses, boss)
     end
   end
@@ -430,6 +430,9 @@ function Level:update(dt)
   Movement.update_enemies(self.bosses, self.world, self.collision_world, dt)
   for _, enemy in ipairs(self.enemies) do
     enemy:update_animation(dt)
+  end
+  for _, boss in ipairs(self.bosses) do
+    boss:update_animation(dt)
   end
   clamp_player_to_world(self)
 

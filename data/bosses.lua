@@ -1,7 +1,7 @@
 local bosses = {
   {
     id = "boss_ferro",
-    name = "Capanga do Ferro",
+    name = "João Facão",
     max_health = 272,
     speed = 90,
     charge_speed = 260,
@@ -55,7 +55,7 @@ local bosses = {
   },
   {
     id = "boss_final",
-    name = "Coronel Supremo",
+    name = "João Facão",
     max_health = 544,
     speed = 120,
     charge_speed = 320,
@@ -80,6 +80,11 @@ local bosses = {
     reward_offensive = nil,
     reward_defensive = nil,
     is_final = true,
+    sprite_walk_folder = "boss_final_walk",
+    sprite_attack_folder = "boss_final_attack",
+    sprite_scale_mult = 2.8,
+    sprite_margin_bottom = 130,
+    sprite_flip = true,
   },
 }
 
