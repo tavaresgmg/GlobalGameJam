@@ -76,7 +76,13 @@ function Level01:enter()
         local right_bound = spawn.right
           or (platform and (platform.x + platform.w))
           or (spawn.x + 80)
-        table.insert(enemies, Enemy.new(spawn.x, y, def, left_bound, right_bound))
+        local enemy = Enemy.new(spawn.x, y, def, left_bound, right_bound)
+        if spawn.speed then
+          enemy.vx = spawn.speed
+        elseif spawn.speed_mult then
+          enemy.vx = def.speed * spawn.speed_mult
+        end
+        table.insert(enemies, enemy)
       end
     end
     return enemies
