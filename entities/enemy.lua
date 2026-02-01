@@ -116,6 +116,13 @@ function Enemy.new(x, y, config, left_bound, right_bound, assets)
   if ref_h then
     self.sprite_scale = (self.h / ref_h) * self.sprite_scale_mult
   end
+  if config.sprite_offset_y then
+    self.sprite_offset_y = config.sprite_offset_y
+  elseif config.sprite_margin_bottom and self.sprite_scale then
+    self.sprite_offset_y = config.sprite_margin_bottom * self.sprite_scale
+  else
+    self.sprite_offset_y = 0
+  end
   return self
 end
 
@@ -203,7 +210,16 @@ function Enemy:draw()
     local sy = self.sprite_scale
     local origin_x = (self.anim_walk_w or self.anim_attack_w or frame:getWidth()) / 2
     local origin_y = (self.anim_walk_h or self.anim_attack_h or frame:getHeight())
-    love.graphics.draw(frame, self.x + self.w / 2, self.y + self.h, 0, sx, sy, origin_x, origin_y)
+    love.graphics.draw(
+      frame,
+      self.x + self.w / 2,
+      self.y + self.h + (self.sprite_offset_y or 0),
+      0,
+      sx,
+      sy,
+      origin_x,
+      origin_y
+    )
   else
     if self.flash_timer and self.flash_timer > 0 then
       love.graphics.setColor(1, 1, 1)

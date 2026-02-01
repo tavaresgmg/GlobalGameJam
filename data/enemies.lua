@@ -24,6 +24,7 @@ local enemies = {
     flank_switch_time = 1.8,
     flank_switch_chance = 0.35,
     sprite_scale_mult = 2.8,
+    sprite_margin_bottom = 138,
     sprite_flip = true,
   },
   rusher = {
@@ -51,6 +52,7 @@ local enemies = {
     flank_switch_time = 1.4,
     flank_switch_chance = 0.25,
     sprite_scale_mult = 2.8,
+    sprite_margin_bottom = 138,
     sprite_flip = true,
   },
   mini_boss = {
@@ -79,6 +81,7 @@ local enemies = {
     flank_switch_time = 2.2,
     flank_switch_chance = 0.2,
     sprite_scale_mult = 2.4,
+    sprite_margin_bottom = 138,
     sprite_flip = true,
   },
 }
