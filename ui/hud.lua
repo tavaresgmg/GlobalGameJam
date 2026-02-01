@@ -118,7 +118,7 @@ local function draw_status_panel(self, player, x, y, width, height)
   )
 end
 
-local function draw_combat_panel(self, player, x, y, width, height)
+local function draw_combat_panel(self, player, x, y, width, height, level_index, total_levels)
   draw_box(x, y, width, height)
   love.graphics.setFont(self.font_small)
 
@@ -130,8 +130,12 @@ local function draw_combat_panel(self, player, x, y, width, height)
   love.graphics.print(special_label, x + HUD_LAYOUT.panel_inner, y + HUD_LAYOUT.status_text_y)
 
   set_color(HUD_COLORS.text_secondary)
+  local phase_label = ""
+  if level_index and total_levels then
+    phase_label = "  |  Fase " .. tostring(level_index) .. "/" .. tostring(total_levels)
+  end
   love.graphics.print(
-    "A: " .. player.masks_absorbed .. "  R: " .. player.masks_removed,
+    "A: " .. player.masks_absorbed .. "  R: " .. player.masks_removed .. phase_label,
     x + HUD_LAYOUT.panel_inner,
     y + HUD_LAYOUT.mode_text_y
   )
@@ -165,7 +169,7 @@ local function draw_abilities_panel(self, player, ability_defs, x, y, width)
   end
 end
 
-function Hud:draw(player, ability_defs, _, _, settings)
+function Hud:draw(player, ability_defs, _, _, settings, level_index, total_levels)
   local screen_w = settings and settings.width or 960
   local screen_h = settings and settings.height or 540
 
@@ -174,7 +178,16 @@ function Hud:draw(player, ability_defs, _, _, settings)
   local panel_h = HUD_LAYOUT.panel_h
 
   draw_status_panel(self, player, padding, padding, panel_w, panel_h)
-  draw_combat_panel(self, player, screen_w - padding - panel_w, padding, panel_w, panel_h)
+  draw_combat_panel(
+    self,
+    player,
+    screen_w - padding - panel_w,
+    padding,
+    panel_w,
+    panel_h,
+    level_index,
+    total_levels
+  )
 
   local abilities_w = HUD_LAYOUT.abilities_w
   draw_abilities_panel(

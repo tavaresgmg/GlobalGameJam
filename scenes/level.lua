@@ -14,16 +14,88 @@ local Progression = require("systems.progression")
 local Health = require("systems.health")
 local Collision = require("systems.collision")
 local Triggers = require("systems.triggers")
-local LevelData = require("data.level01")
+local LevelIndex = require("data.levels.index")
 local BossDefs = require("data.bosses")
 local AbilityDefs = require("data.abilities")
 local EnemyDefs = require("data.enemies")
 
-local Level01 = {}
-Level01.__index = Level01
+local Level = {}
+Level.__index = Level
 
-function Level01.new(context)
-  local self = setmetatable({}, Level01)
+local function copy_list(values)
+  local out = {}
+  for i, value in ipairs(values or {}) do
+    out[i] = value
+  end
+  return out
+end
+
+local function copy_map(values)
+  local out = {}
+  for key, value in pairs(values or {}) do
+    out[key] = value
+  end
+  return out
+end
+
+local function build_player_state(player)
+  return {
+    mode = player.mode,
+    unmasked = player.unmasked,
+    health = player.health,
+    masks_absorbed = player.masks_absorbed,
+    masks_removed = player.masks_removed,
+    special_charge_absorb = player.special_charge_absorb,
+    special_charge_remove = player.special_charge_remove,
+    special_ready_offensive = player.special_ready_offensive,
+    special_ready_defensive = player.special_ready_defensive,
+    special_offensive_unlocked = player.special_offensive_unlocked,
+    special_defensive_unlocked = player.special_defensive_unlocked,
+    active_abilities = copy_list(player.active_abilities),
+    ability_set = copy_map(player.ability_set),
+  }
+end
+
+local function apply_player_state(player, state, ability_defs)
+  if not state then
+    return
+  end
+
+  player.mode = state.mode or player.mode
+  player.unmasked = state.unmasked or false
+  player.masks_absorbed = state.masks_absorbed or 0
+  player.masks_removed = state.masks_removed or 0
+  player.special_charge_absorb = state.special_charge_absorb or 0
+  player.special_charge_remove = state.special_charge_remove or 0
+  player.special_ready_offensive = state.special_ready_offensive or false
+  player.special_ready_defensive = state.special_ready_defensive or false
+  player.special_offensive_unlocked = state.special_offensive_unlocked or false
+  player.special_defensive_unlocked = state.special_defensive_unlocked or false
+  player.active_abilities = copy_list(state.active_abilities)
+  player.ability_set = copy_map(state.ability_set)
+  Abilities.recalculate(player, ability_defs)
+
+  if state.health then
+    player.health = math.min(state.health, player.max_health)
+  end
+end
+
+local function advance_level(level)
+  if level.level_index >= #LevelIndex then
+    return false
+  end
+
+  local next_state = build_player_state(level.player)
+  level.context.state.switch(Level.new(level.context, {
+    level_index = level.level_index + 1,
+    player_state = next_state,
+  }))
+  return true
+end
+
+function Level.new(context, opts)
+  local self = setmetatable({}, Level)
+  opts = opts or {}
   self.context = context
   self.hud = Hud.new(self.context.assets)
   self.particles = Particles.new()
@@ -31,13 +103,19 @@ function Level01.new(context)
   self.final_triggered = false
   self.segments = {}
   self.current_segment = 1
+  self.level_index = opts.level_index or 1
+  self.player_state = opts.player_state
   return self
 end
 
-function Level01:enter()
+function Level:enter()
   local settings = self.context.settings
   local constants = self.context.constants
-  local level_data = LevelData.build(settings, constants)
+  local level_module = LevelIndex[self.level_index]
+  if not level_module then
+    error("Nivel invalido: " .. tostring(self.level_index))
+  end
+  local level_data = require(level_module).build(settings, constants)
 
   self.world = {
     width = level_data.world.width,
@@ -62,6 +140,7 @@ function Level01:enter()
 
   Abilities.init_player(self.player)
   Progression.init_player(self.player)
+  apply_player_state(self.player, self.player_state, AbilityDefs)
 
   local function build_enemy_spawns(spawn_defs)
     local enemies = {}
@@ -94,27 +173,31 @@ function Level01:enter()
   local boss_width = constants.boss.width
   local boss_height = constants.boss.height
 
-  self.bosses = {
-    Boss.new(BossDefs[1], 1700, floor_y - boss_height, boss_width, boss_height),
-    Boss.new(BossDefs[2], 2900, floor_y - boss_height, boss_width, boss_height),
-    Boss.new(BossDefs[3], 4100, floor_y - boss_height, boss_width, boss_height),
-  }
+  self.bosses = {}
+  for _, spawn in ipairs(level_data.boss_spawns or {}) do
+    local def = BossDefs[spawn.boss_index]
+    if def then
+      local boss = Boss.new(def, spawn.x, floor_y - boss_height, boss_width, boss_height)
+      table.insert(self.bosses, boss)
+    end
+  end
   for _, boss in ipairs(self.bosses) do
     boss.damage = constants.boss.damage
     Collision.add(self.collision_world, boss)
   end
 
-  self.final_boss = self.bosses[#self.bosses]
+  self.final_boss = nil
+  for _, boss in ipairs(self.bosses) do
+    if boss.is_final then
+      self.final_boss = boss
+      break
+    end
+  end
 
-  self.pickups = {
-    Pickup.new(520, floor_y - 80, constants.pickup.heal_amount),
-    Pickup.new(1320, floor_y - 80, constants.pickup.heal_amount),
-    Pickup.new(2080, floor_y - 80, constants.pickup.heal_amount),
-    Pickup.new(2760, floor_y - 80, constants.pickup.heal_amount),
-    Pickup.new(3440, floor_y - 80, constants.pickup.heal_amount),
-    Pickup.new(4080, floor_y - 80, constants.pickup.heal_amount),
-    Pickup.new(4680, floor_y - 80, constants.pickup.heal_amount),
-  }
+  self.pickups = {}
+  for _, spawn in ipairs(level_data.pickup_spawns or {}) do
+    table.insert(self.pickups, Pickup.new(spawn.x, spawn.y, constants.pickup.heal_amount))
+  end
   for _, pickup in ipairs(self.pickups) do
     Collision.add(self.collision_world, pickup)
   end
@@ -122,7 +205,14 @@ function Level01:enter()
   self.mask_drops = {}
 
   self.unmask_trigger = level_data.unmask_trigger
-  Collision.add(self.collision_world, self.unmask_trigger)
+  if self.unmask_trigger then
+    if self.player.mode ~= "offensive" then
+      self.unmask_trigger.used = true
+    end
+    if not self.unmask_trigger.used then
+      Collision.add(self.collision_world, self.unmask_trigger)
+    end
+  end
 
   local function resolve_entities(list, ids)
     local items = {}
@@ -194,7 +284,7 @@ end
 
 local function enter_game_over(level)
   local GameOver = require("scenes.gameover")
-  level.context.state.switch(GameOver.new(level.context))
+  level.context.state.switch(GameOver.new(level.context, level.level_index))
 end
 
 local function clamp_player_to_world(level)
@@ -250,7 +340,7 @@ local function entity_hits_player(entity, player)
   return false
 end
 
-function Level01:update(dt)
+function Level:update(dt)
   update_timers(self, dt)
 
   AI.update(self.enemies, self.player, self.context.constants.enemy.agro_range, dt)
@@ -362,6 +452,9 @@ function Level01:update(dt)
 
   local current_segment = self.segments[self.current_segment]
   if current_segment and not current_segment.locked and self.player.x > current_segment.gate_x then
+    if advance_level(self) then
+      return
+    end
     self.current_segment = math.min(self.current_segment + 1, #self.segments)
   end
 
@@ -388,7 +481,7 @@ function Level01:update(dt)
   end
 end
 
-function Level01:draw()
+function Level:draw()
   local half_w = self.context.settings.width / 2
   local half_h = self.context.settings.height / 2
   local target_x = self.player.x + self.player.w / 2
@@ -406,14 +499,7 @@ function Level01:draw()
     love.graphics.rectangle("fill", platform.x, platform.y, platform.w, platform.h)
   end
 
-  for _, segment in ipairs(self.segments) do
-    if segment.locked then
-      love.graphics.setColor(0.6, 0.2, 0.2, 0.6)
-      love.graphics.rectangle("fill", segment.gate_x - 4, self.world.height - 140, 8, 120)
-    end
-  end
-
-  if not self.unmask_trigger.used then
+  if self.unmask_trigger and not self.unmask_trigger.used then
     love.graphics.setColor(0.3, 0.3, 0.4)
     love.graphics.rectangle(
       "line",
@@ -448,7 +534,15 @@ function Level01:draw()
 
   self.camera:detach()
 
-  self.hud:draw(self.player, AbilityDefs, self.messages, self.bosses, self.context.settings)
+  self.hud:draw(
+    self.player,
+    AbilityDefs,
+    self.messages,
+    self.bosses,
+    self.context.settings,
+    self.level_index,
+    #LevelIndex
+  )
 end
 
-return Level01
+return Level

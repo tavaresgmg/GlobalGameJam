@@ -1,6 +1,165 @@
-local Level01 = {}
+local LevelBase = {}
 
-function Level01.build(settings, constants)
+local function in_range(x, start_x, end_x)
+  return x >= start_x and x < end_x
+end
+
+local function build_level_data(data, level_index)
+  local segment = data.segments[level_index]
+  if not segment then
+    return data
+  end
+
+  local start_x = segment.start_x
+  local end_x = segment.gate_x
+  local offset_x = -start_x
+  local segment_length = end_x - start_x
+
+  local world = {
+    width = segment_length,
+    height = data.world.height,
+    gravity = data.world.gravity,
+  }
+
+  local platforms = {}
+  local platform_map = {}
+
+  for i, platform in ipairs(data.platforms) do
+    if i == 1 then
+      local floor = {
+        x = 0,
+        y = platform.y,
+        w = segment_length,
+        h = platform.h,
+      }
+      table.insert(platforms, floor)
+      platform_map[i] = #platforms
+    else
+      if platform.x + platform.w > start_x and platform.x < end_x then
+        local platform_start = math.max(platform.x, start_x)
+        local platform_end = math.min(platform.x + platform.w, end_x)
+        local sliced_platform = {
+          x = platform_start + offset_x,
+          y = platform.y,
+          w = math.max(0, platform_end - platform_start),
+          h = platform.h,
+        }
+        table.insert(platforms, sliced_platform)
+        platform_map[i] = #platforms
+      end
+    end
+  end
+
+  local enemy_spawns = {}
+  for _, spawn in ipairs(data.enemy_spawns or {}) do
+    if in_range(spawn.x, start_x, end_x) then
+      local mapped_platform = nil
+      local include_spawn = true
+      if spawn.platform then
+        mapped_platform = platform_map[spawn.platform]
+        if not mapped_platform then
+          include_spawn = false
+        end
+      end
+
+      if include_spawn then
+        local sliced_spawn = {
+          kind = spawn.kind,
+          x = spawn.x + offset_x,
+        }
+        if mapped_platform then
+          sliced_spawn.platform = mapped_platform
+        end
+        if spawn.left then
+          local clamped_left = math.max(spawn.left, start_x)
+          sliced_spawn.left = clamped_left + offset_x
+        end
+        if spawn.right then
+          local clamped_right = math.min(spawn.right, end_x)
+          sliced_spawn.right = clamped_right + offset_x
+        end
+        if spawn.speed_mult then
+          sliced_spawn.speed_mult = spawn.speed_mult
+        end
+        if spawn.speed then
+          sliced_spawn.speed = spawn.speed
+        end
+        table.insert(enemy_spawns, sliced_spawn)
+      end
+    end
+  end
+
+  local pickup_spawns = {}
+  for _, pickup in ipairs(data.pickup_spawns or {}) do
+    if in_range(pickup.x, start_x, end_x) then
+      table.insert(pickup_spawns, {
+        x = pickup.x + offset_x,
+        y = pickup.y,
+      })
+    end
+  end
+
+  local boss_spawns = {}
+  for _, boss in ipairs(data.boss_spawns or {}) do
+    if in_range(boss.x, start_x, end_x) then
+      table.insert(boss_spawns, {
+        boss_index = boss.boss_index,
+        x = boss.x + offset_x,
+      })
+    end
+  end
+
+  local unmask_trigger = nil
+  if data.unmask_trigger and in_range(data.unmask_trigger.x, start_x, end_x) then
+    unmask_trigger = {
+      x = data.unmask_trigger.x + offset_x,
+      y = data.unmask_trigger.y,
+      w = data.unmask_trigger.w,
+      h = data.unmask_trigger.h,
+      used = false,
+      tag = data.unmask_trigger.tag,
+      is_trigger = true,
+      in_world = false,
+    }
+  end
+
+  local enemy_ids = {}
+  for i = 1, #enemy_spawns do
+    table.insert(enemy_ids, i)
+  end
+  local boss_ids = {}
+  for i = 1, #boss_spawns do
+    table.insert(boss_ids, i)
+  end
+
+  local segments = {
+    {
+      start_x = 0,
+      gate_x = segment_length,
+      locked = segment.locked,
+      enemy_ids = enemy_ids,
+      boss_ids = boss_ids,
+    },
+  }
+
+  return {
+    world = world,
+    platforms = platforms,
+    enemy_spawns = enemy_spawns,
+    spawn = {
+      x = data.spawn.x,
+      y = data.spawn.y,
+    },
+    unmask_trigger = unmask_trigger,
+    segments = segments,
+    floor_y = data.floor_y,
+    pickup_spawns = pickup_spawns,
+    boss_spawns = boss_spawns,
+    level_index = level_index,
+  }
+end
+
+function LevelBase.build(settings, constants, level_index)
   local floor_y = settings.height - 40
 
   local world = {
@@ -74,6 +233,22 @@ function Level01.build(settings, constants)
 
   local spawn = { x = 80, y = floor_y - constants.player.height }
 
+  local pickup_spawns = {
+    { x = 520, y = floor_y - 80 },
+    { x = 1320, y = floor_y - 80 },
+    { x = 2080, y = floor_y - 80 },
+    { x = 2760, y = floor_y - 80 },
+    { x = 3440, y = floor_y - 80 },
+    { x = 4080, y = floor_y - 80 },
+    { x = 4680, y = floor_y - 80 },
+  }
+
+  local boss_spawns = {
+    { boss_index = 1, x = 1700 },
+    { boss_index = 2, x = 2900 },
+    { boss_index = 3, x = 4100 },
+  }
+
   local unmask_trigger = {
     x = 1240,
     y = floor_y - 80,
@@ -133,7 +308,7 @@ function Level01.build(settings, constants)
     },
   }
 
-  return {
+  local data = {
     world = world,
     platforms = platforms,
     enemy_spawns = enemy_spawns,
@@ -141,7 +316,15 @@ function Level01.build(settings, constants)
     unmask_trigger = unmask_trigger,
     segments = segments,
     floor_y = floor_y,
+    pickup_spawns = pickup_spawns,
+    boss_spawns = boss_spawns,
   }
+
+  if level_index then
+    return build_level_data(data, level_index)
+  end
+
+  return data
 end
 
-return Level01
+return LevelBase

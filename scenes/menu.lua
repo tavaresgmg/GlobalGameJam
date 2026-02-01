@@ -1,4 +1,4 @@
-local Level01 = require("scenes.level01")
+local Level = require("scenes.level")
 local UI = require("config.ui")
 
 local Menu = {}
@@ -142,7 +142,7 @@ function Menu:update()
     elseif input:pressed("confirm") then
       local selected = self.items[self.selected_index]
       if selected == "Iniciar" then
-        self.context.state.switch(Level01.new(self.context))
+        self.context.state.switch(Level.new(self.context, { level_index = 1 }))
       elseif selected == "Sobre" then
         self.screen = "about"
       elseif selected == "Sair" then

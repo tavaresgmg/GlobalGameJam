@@ -34,7 +34,7 @@ MVP jogavel com placeholders e fluxo completo de combate, progressao e finais.
 
 ## Temporarios (TODO)
 - Fonte fallback default em ui/hud.lua (substituir por fonte real em assets/fonts).
-- Fase hardcoded em scenes/level01.lua (avaliar Tiled + STI).
+- Fases carregadas via scenes/level.lua + data/levels/* (avaliar Tiled + STI).
 - Sem sistema de save/progressao externo (avaliar bitser).
 - Expandir cargo para imagens/sons (fonts ja via cargo).
 - Hot reload em dev via lurker integrado (validar no fluxo de trabalho).

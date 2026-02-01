@@ -36,9 +36,10 @@ local function draw_background(width, height)
   )
 end
 
-function GameOver.new(context)
+function GameOver.new(context, level_index)
   local self = setmetatable({}, GameOver)
   self.context = context
+  self.level_index = level_index or 1
   self.font_title = load_font(self.context.assets, MENU_FONTS.title)
   self.font_body = load_font(self.context.assets, MENU_FONTS.body)
   self.font_footer = load_font(self.context.assets, MENU_FONTS.footer)
@@ -73,8 +74,8 @@ end
 function GameOver:update()
   local input = self.context.input
   if input:pressed("confirm") then
-    local Level01 = require("scenes.level01")
-    self.context.state.switch(Level01.new(self.context))
+    local Level = require("scenes.level")
+    self.context.state.switch(Level.new(self.context, { level_index = self.level_index }))
   elseif input:pressed("back") then
     local Menu = require("scenes.menu")
     self.context.state.switch(Menu.new(self.context))
