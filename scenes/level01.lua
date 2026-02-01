@@ -186,15 +186,15 @@ local function player_hit(level, player, damage, hurt_cooldown)
   end
 
   if died then
-    player.health = player.max_health
     return true, true
   end
 
   return false, true
 end
 
-local function restart_level(level)
-  level.context.state.switch(Level01.new(level.context))
+local function enter_game_over(level)
+  local GameOver = require("scenes.gameover")
+  level.context.state.switch(GameOver.new(level.context))
 end
 
 local function clamp_player_to_world(level)
@@ -324,7 +324,7 @@ function Level01:update(dt)
   end
 
   if player_died then
-    restart_level(self)
+    enter_game_over(self)
     return
   end
 
@@ -372,7 +372,7 @@ function Level01:update(dt)
   end
 
   if self.player.y > self.world.height + 200 then
-    restart_level(self)
+    enter_game_over(self)
     return
   end
 

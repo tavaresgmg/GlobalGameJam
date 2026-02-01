@@ -99,7 +99,8 @@ function Boss:update_behavior(player, dt, agro_range)
 
   if distance <= chase_range then
     local preferred = self.charge_range * 0.75
-    local player_attacking = player.attack_timer and player.attack_timer > 0
+    local player_attacking = (player.attack_timer and player.attack_timer > 0)
+      or (player.attack_cooldown and player.attack_cooldown > 0)
     if distance < preferred and not player_attacking then
       self.dir = dx >= 0 and -1 or 1
     else

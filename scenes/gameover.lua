@@ -1,7 +1,7 @@
 local UI = require("config.ui")
 
-local Final = {}
-Final.__index = Final
+local GameOver = {}
+GameOver.__index = GameOver
 
 local MENU_COLORS = UI.colors.menu
 local MENU_FONTS = UI.fonts.menu
@@ -36,63 +36,49 @@ local function draw_background(width, height)
   )
 end
 
-function Final.new(context, outcome)
-  local self = setmetatable({}, Final)
+function GameOver.new(context)
+  local self = setmetatable({}, GameOver)
   self.context = context
-  self.outcome = outcome
   self.font_title = load_font(self.context.assets, MENU_FONTS.title)
   self.font_body = load_font(self.context.assets, MENU_FONTS.body)
   self.font_footer = load_font(self.context.assets, MENU_FONTS.footer)
   return self
 end
 
-function Final:draw()
+function GameOver:draw()
   local width = self.context.settings.width
   local height = self.context.settings.height
 
   draw_background(width, height)
 
-  local title = self.outcome == "good" and "Final Bom" or "Final Ruim"
   love.graphics.setFont(self.font_title)
   set_color(MENU_COLORS.title)
-  love.graphics.printf(title, 0, height * 0.28, width, "center")
+  love.graphics.printf("Voce morreu", 0, height * 0.32, width, "center")
 
   love.graphics.setFont(self.font_body)
   set_color(MENU_COLORS.subtitle)
-  if self.outcome == "good" then
-    love.graphics.printf(
-      "Voce libertou o povo e quebrou o ciclo do Coronel.",
-      0,
-      height * 0.45,
-      width,
-      "center"
-    )
-  else
-    love.graphics.printf(
-      "Voce absorveu a mascara do Coronel e virou o novo receptaculo.",
-      0,
-      height * 0.45,
-      width,
-      "center"
-    )
-  end
-
-  love.graphics.setFont(self.font_footer)
-  set_color(MENU_COLORS.footer)
   love.graphics.printf(
-    "Pressione Enter para voltar ao menu",
+    "Pressione Enter para tentar de novo",
     0,
-    height * 0.62,
+    height * 0.48,
     width,
     "center"
   )
+
+  love.graphics.setFont(self.font_footer)
+  set_color(MENU_COLORS.footer)
+  love.graphics.printf("Esc para menu", 0, height * 0.58, width, "center")
 end
 
-function Final:update()
-  if self.context.input:pressed("confirm") or self.context.input:pressed("back") then
+function GameOver:update()
+  local input = self.context.input
+  if input:pressed("confirm") then
+    local Level01 = require("scenes.level01")
+    self.context.state.switch(Level01.new(self.context))
+  elseif input:pressed("back") then
     local Menu = require("scenes.menu")
     self.context.state.switch(Menu.new(self.context))
   end
 end
 
-return Final
+return GameOver
