@@ -1,7 +1,8 @@
 local Settings = require("config.settings")
 local Constants = require("config.constants")
-local Input = require("core.input")
-local State = require("core.state")
+local Baton = require("support.baton")
+local Cargo = require("support.cargo")
+local Gamestate = require("support.hump.gamestate")
 local Time = require("core.time")
 local Menu = require("scenes.menu")
 
@@ -10,13 +11,29 @@ App.__index = App
 
 function App.new()
   local self = setmetatable({}, App)
-  self.input = Input.new()
-  self.state = State.new()
+  self.input = Baton.new({
+    controls = {
+      left = { "key:a", "key:left" },
+      right = { "key:d", "key:right" },
+      up = { "key:w", "key:up" },
+      down = { "key:s", "key:down" },
+      jump = { "key:space", "key:w", "key:up" },
+      dash = { "key:lshift", "key:rshift" },
+      attack = { "key:j", "key:k", "key:x" },
+      special = { "key:q" },
+      interact = { "key:e" },
+      confirm = { "key:return", "key:kpenter", "key:space" },
+      back = { "key:escape" },
+      pause = { "key:escape" },
+    },
+  })
+  self.state = Gamestate
   self.context = {
     input = self.input,
     state = self.state,
     settings = Settings,
     constants = Constants,
+    assets = nil,
   }
   return self
 end
@@ -28,35 +45,32 @@ function App:load()
     vsync = Settings.vsync,
   })
 
-  self:bind_defaults()
-  self.state:push(Menu.new(self.context))
-end
+  self.assets = Cargo.init("assets")
+  self.context.assets = self.assets
 
-function App:bind_defaults()
-  self.input:bind("left", { "a", "left" })
-  self.input:bind("right", { "d", "right" })
-  self.input:bind("jump", { "space", "w", "up" })
-  self.input:bind("attack", { "j", "k", "x" })
-  self.input:bind("pause", { "escape" })
+  self.state.switch(Menu.new(self.context))
 end
 
 function App:update(dt)
   dt = Time.clamp_dt(dt)
-  self.state:update(dt)
-  self.input:clear()
+  self.input:update()
+  self.state.update(dt)
 end
 
 function App:draw()
-  self.state:draw()
+  self.state.draw()
 end
 
 function App:keypressed(key)
-  self.input:keypressed(key)
-  self.state:keypressed(key)
+  if self.state.keypressed then
+    self.state.keypressed(key)
+  end
 end
 
 function App:keyreleased(key)
-  self.state:keyreleased(key)
+  if self.state.keyreleased then
+    self.state.keyreleased(key)
+  end
 end
 
 return App

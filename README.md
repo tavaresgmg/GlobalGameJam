@@ -16,29 +16,39 @@ make lint
 make check
 ```
 
+## Controles
+
+- Mover: A/D ou setas
+- Pulo: Space
+- Dash: Shift
+- Ataque: J, K ou X
+- Especial: Q
+- Interagir: E
+- Voltar ao menu: Esc
+
 ## Estrutura
 
 ```
 assets/        Audio, sprites e tiles
 config/        Constantes e settings
 core/          Loop, input, camera, fisica, cenas
-entities/      Player e inimigos
-systems/       Movimento e combate
-scenes/        Menu e fase
+data/          Definicao de bosses e habilidades
+entities/      Player, inimigos, bosses
+systems/       Movimento, combate, AI, progressao
+scenes/        Menu, fase e final
 ui/            HUD
 support/       Funcoes simples de math
 main.lua       Entrada do jogo
 ```
-
-## Controles
-
-- Mover: A/D ou setas
-- Pulo: Space
-- Ataque: J, K ou X
-- Voltar ao menu: Esc
 
 ## Proximo passo rapido
 
 - Trocar sprites do player/inimigo
 - Ajustar constantes em config/constants.lua
 - Adicionar novas fases em scenes/
+
+## Docs
+
+- docs/PROJECT.md (visao geral)
+- docs/ROADMAP.md (80/20)
+- docs/CHANGELOG.md
