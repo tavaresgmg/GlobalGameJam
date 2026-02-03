@@ -1,15 +1,11 @@
 local Base = require("data.levels.base")
+local Backgrounds = require("data.levels.backgrounds")
+local PlatformRandom = require("data.levels.platform_random")
 
 local Level05 = {}
 
 function Level05.build(settings, constants)
   local base = Base.build(settings, constants, 5)
-  local floor_y = settings.height - 64
-  
-  -- Apenas o chão, sem plataformas extras
-  base.platforms = {
-    base.platforms[1],
-  }
   
   -- Sem inimigos normais
   base.enemy_spawns = {}
@@ -29,6 +25,13 @@ function Level05.build(settings, constants)
       boss_ids = { 1 },
     },
   }
+
+  base.platforms = PlatformRandom.build_random_platforms(
+    base.world.width,
+    base.floor_y,
+    base.level_index
+  )
+  base.background = Backgrounds.phase1_background
   
   return base
 end

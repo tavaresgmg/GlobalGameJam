@@ -26,6 +26,7 @@ make check
 - Trocar arma: Q
 - Interagir: E
 - Voltar ao menu: Esc
+- Tela cheia: F11 ou Alt+Enter
 
 ## Estrutura
 

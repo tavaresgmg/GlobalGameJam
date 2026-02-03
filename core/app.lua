@@ -46,6 +46,12 @@ function App:load()
     vsync = Settings.vsync,
   })
 
+  local seed = Settings.random_seed or os.time()
+  math.randomseed(seed)
+  Settings.random_seed = seed
+
+  self.canvas = love.graphics.newCanvas(Settings.width, Settings.height)
+
   self.assets = Cargo.init("assets")
   self.context.assets = self.assets
 
@@ -59,10 +65,53 @@ function App:update(dt)
 end
 
 function App:draw()
-  self.state.draw()
+  local window_w, window_h = love.graphics.getDimensions()
+  local scale = math.min(window_w / Settings.width, window_h / Settings.height)
+  local offset_x = math.floor((window_w - Settings.width * scale) * 0.5)
+  local offset_y = math.floor((window_h - Settings.height * scale) * 0.5)
+
+  if self.canvas then
+    love.graphics.setCanvas(self.canvas)
+    love.graphics.clear(0, 0, 0, 1)
+    self.state.draw()
+    love.graphics.setCanvas()
+
+    love.graphics.clear(0, 0, 0, 1)
+    love.graphics.origin()
+    love.graphics.setColor(1, 1, 1, 1)
+    love.graphics.draw(self.canvas, offset_x, offset_y, 0, scale, scale)
+  else
+    self.state.draw()
+  end
+end
+
+function App:toggle_fullscreen()
+  local fullscreen = love.window.getFullscreen()
+  local target = not fullscreen
+  local success = love.window.setFullscreen(target, "desktop")
+
+  if success then
+    Settings.fullscreen = target
+  else
+    print("[window] Falha ao alternar tela cheia.")
+  end
+
+  return success
 end
 
 function App:keypressed(key)
+  if key == "f11" then
+    self:toggle_fullscreen()
+    return
+  end
+
+  if key == "return" or key == "kpenter" then
+    if love.keyboard.isDown("lalt") or love.keyboard.isDown("ralt") then
+      self:toggle_fullscreen()
+      return
+    end
+  end
+
   if self.state.keypressed then
     self.state.keypressed(key)
   end

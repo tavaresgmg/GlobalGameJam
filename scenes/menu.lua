@@ -58,11 +58,16 @@ local function load_font(assets, font_def)
   return love.graphics.newFont((font_def and font_def.size) or 12)
 end
 
+local function build_menu_items(settings)
+  local fullscreen_label = (settings and settings.fullscreen) and "Janela" or "Tela cheia"
+  return { "Iniciar", "Controles", "Sobre", fullscreen_label, "Sair" }
+end
+
 function Menu.new(context)
   local self = setmetatable({}, Menu)
   self.context = context
   self.screen = "menu"
-  self.items = { "Iniciar", "Controles", "Sobre", "Sair" }
+  self.items = build_menu_items(self.context.settings)
   self.selected_index = 1
   self.intro_page = 1
   self.intro_pages = {
@@ -241,6 +246,7 @@ local function draw_controls(width, height, title_font, body_font)
       "Especial: R",
       "Trocar arma: Q",
       "Interagir: E",
+      "Tela cheia: F11 ou Alt+Enter",
       "Pausar/Sair: Esc",
     }, "\n"),
     0,
@@ -326,6 +332,7 @@ end
 function Menu:update()
   local input = self.context.input
   if self.screen == "menu" then
+    self.items = build_menu_items(self.context.settings)
     if input:pressed("down") then
       self.selected_index = self.selected_index % #self.items + 1
     elseif input:pressed("up") then
@@ -339,6 +346,16 @@ function Menu:update()
         self.screen = "controls"
       elseif selected == "Sobre" then
         self.screen = "about"
+      elseif selected == "Tela cheia" or selected == "Janela" then
+        local fullscreen = love.window.getFullscreen()
+        local target = not fullscreen
+        local success = love.window.setFullscreen(target, "desktop")
+        if success then
+          self.context.settings.fullscreen = target
+          self.items = build_menu_items(self.context.settings)
+        else
+          print("[window] Falha ao alternar tela cheia.")
+        end
       elseif selected == "Sair" then
         love.event.quit()
       end

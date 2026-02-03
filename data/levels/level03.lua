@@ -1,64 +1,12 @@
 local Base = require("data.levels.base")
+local Backgrounds = require("data.levels.backgrounds")
+local PlatformRandom = require("data.levels.platform_random")
 
 local Level03 = {}
 
-local scale = 0.4
-
-local function add_platform_L(platforms, x, y)
-  table.insert(platforms, {
-    x = x + 87 * scale, y = y,
-    w = 261 * scale, h = 190 * scale,
-    sprite = "platform_01", sprite_scale = scale,
-    sprite_offset_x = -87 * scale, sprite_offset_y = 0,
-  })
-  table.insert(platforms, {
-    x = x, y = y + 190 * scale,
-    w = 174 * scale, h = 189 * scale,
-  })
-end
-
-local function add_platform(platforms, x, y, sprite)
-  if sprite == "platform_02" then
-    table.insert(platforms, {
-      x = x, y = y + 50 * scale,
-      w = 237 * scale, h = 80 * scale,
-      sprite = sprite, sprite_scale = scale,
-      sprite_offset_x = 0, sprite_offset_y = -50 * scale,
-    })
-  elseif sprite == "platform_03" then
-    table.insert(platforms, {
-      x = x, y = y,
-      w = 326 * scale, h = 463 * scale,
-      sprite = sprite, sprite_scale = scale,
-    })
-  elseif sprite == "platform_04" then
-    table.insert(platforms, {
-      x = x, y = y + 30 * scale,
-      w = 524 * scale, h = 70 * scale,
-      sprite = sprite, sprite_scale = scale,
-      sprite_offset_x = 0, sprite_offset_y = -30 * scale,
-    })
-  end
-end
-
 function Level03.build(settings, constants)
   local base = Base.build(settings, constants, 3)
-  
-  local new_platforms = {
-    base.platforms[1],
-  }
-  
-  add_platform(new_platforms, 250, 200, "platform_04")
-  add_platform(new_platforms, 650, 160, "platform_02")
-  add_platform_L(new_platforms, 1000, 180)
-  add_platform(new_platforms, 1400, 190, "platform_04")
-  add_platform(new_platforms, 1800, 150, "platform_02")
-  add_platform_L(new_platforms, 2200, 200)
-  add_platform(new_platforms, 2600, 170, "platform_04")
-  add_platform(new_platforms, 3000, 210, "platform_02")
-  
-  base.platforms = new_platforms
-  
+
   base.enemy_spawns = {
     { kind = "grunt", x = 200, left = 150, right = 350, speed_mult = 1.0 },
     { kind = "rusher", x = 450, left = 350, right = 550, speed_mult = 1.2 },
@@ -112,6 +60,13 @@ function Level03.build(settings, constants)
     end
     base.boss_limit_x = limit
   end
+
+  base.platforms = PlatformRandom.build_random_platforms(
+    base.world.width,
+    base.floor_y,
+    base.level_index
+  )
+  base.background = Backgrounds.phase1_background
   
   return base
 end

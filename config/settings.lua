@@ -3,6 +3,7 @@ local settings = {
   width = 960,
   height = 540,
   fullscreen = false,
+  random_seed = nil,
   vsync = 1,
 }
 

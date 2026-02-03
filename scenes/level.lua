@@ -1,4 +1,4 @@
-local Camera = require("support.hump.camera")
+local Camera = require("support.gamera")
 local Player = require("entities.player")
 local Enemy = require("entities.enemy")
 local Boss = require("entities.boss")
@@ -252,7 +252,8 @@ function Level:enter()
     })
   end
 
-  self.camera = Camera(settings.width / 2, settings.height / 2)
+  self.camera = Camera.new(0, 0, self.world.width, self.world.height)
+  self.camera:setWindow(0, 0, settings.width, settings.height)
 end
 
 local function update_timers(level, dt)
@@ -371,7 +372,8 @@ local function draw_layer(image, world_width, world_height, camera, speed)
   end
   local scale = world_height / ih
   local scaled_w = iw * scale
-  local x = camera.x * (speed or 1)
+  local cam_x = camera:getPosition()
+  local x = cam_x * (speed or 1)
   local start_x = -x % scaled_w - scaled_w
   for draw_x = start_x, world_width + scaled_w, scaled_w do
     love.graphics.draw(image, draw_x, 0, 0, scale, scale)
@@ -389,7 +391,8 @@ local function draw_ground_layer(image, world_width, floor_y, camera, scale, top
   local used_scale = scale or 1
   local scaled_w = iw * used_scale
   local y = floor_y - (top_offset or 0) * used_scale
-  local x = -camera.x
+  local cam_x = camera:getPosition()
+  local x = -cam_x
   local start_x = -x % scaled_w - scaled_w
   for draw_x = start_x, world_width + scaled_w, scaled_w do
     love.graphics.draw(image, draw_x, y, 0, used_scale, used_scale)
@@ -550,10 +553,13 @@ function Level:update(dt)
 
   local current_segment = self.segments[self.current_segment]
   if current_segment and not current_segment.locked and self.player.x > current_segment.gate_x then
-    if advance_level(self) then
-      return
+    if self.current_segment >= #self.segments then
+      if advance_level(self) then
+        return
+      end
+    else
+      self.current_segment = self.current_segment + 1
     end
-    self.current_segment = math.min(self.current_segment + 1, #self.segments)
   end
 
   local active_segment = self.segments[self.current_segment]
@@ -588,95 +594,94 @@ function Level:draw()
   local max_y = math.max(half_h, self.world.height - half_h)
   local cam_x = math.max(half_w, math.min(max_x, target_x))
   local cam_y = math.max(half_h, math.min(max_y, target_y))
-  self.camera:lookAt(cam_x, cam_y)
-  self.camera:attach()
+  self.camera:setPosition(cam_x, cam_y)
 
   love.graphics.clear(0.08, 0.1, 0.12)
-  love.graphics.setColor(1, 1, 1)
-  local background_scale = nil
-  if self.background and self.background.layers then
-    local bucket = self.assets
-      and self.assets.backgrounds
-      and self.background.bucket
-      and self.assets.backgrounds[self.background.bucket]
-    for index, layer in ipairs(self.background.layers) do
-      local image = bucket and bucket[layer.key]
-      if index == 1 and image then
-        background_scale = self.world.height / image:getHeight()
-      end
-      draw_layer(image, self.world.width, self.world.height, self.camera, layer.speed or 1)
-    end
-  end
-
-  local floor_y = self.world.platforms[1] and self.world.platforms[1].y or self.world.height
-  if self.background and self.background.ground and self.assets and self.assets.backgrounds then
-    local bucket = self.background.bucket and self.assets.backgrounds[self.background.bucket]
-    local image = bucket and bucket[self.background.ground.key]
-    draw_ground_layer(
-      image,
-      self.world.width,
-      floor_y,
-      self.camera,
-      background_scale,
-      self.ground_top
-    )
-  else
-    love.graphics.setColor(0.2, 0.2, 0.2)
-    for _, platform in ipairs(self.world.platforms) do
-      if not platform.sprite then
-        love.graphics.rectangle("fill", platform.x, platform.y, platform.w, platform.h)
-      end
-    end
-  end
-
-  -- Desenha sprites de plataformas
-  if self.assets and self.assets.platforms then
+  self.camera:draw(function()
     love.graphics.setColor(1, 1, 1)
-    for i, platform in ipairs(self.world.platforms) do
-      if platform.sprite and self.assets.platforms[platform.sprite] then
-        local img = self.assets.platforms[platform.sprite]
-        local s = platform.sprite_scale or 1
-        local ox = platform.sprite_offset_x or 0
-        local oy = platform.sprite_offset_y or 0
-        love.graphics.draw(img, platform.x + ox, platform.y + oy, 0, s, s)
+    local background_scale = nil
+    if self.background and self.background.layers then
+      local bucket = self.assets
+        and self.assets.backgrounds
+        and self.background.bucket
+        and self.assets.backgrounds[self.background.bucket]
+      for index, layer in ipairs(self.background.layers) do
+        local image = bucket and bucket[layer.key]
+        if index == 1 and image then
+          background_scale = self.world.height / image:getHeight()
+        end
+        draw_layer(image, self.world.width, self.world.height, self.camera, layer.speed or 1)
       end
     end
-  end
 
-  if self.unmask_trigger and not self.unmask_trigger.used then
-    love.graphics.setColor(0.3, 0.3, 0.4)
-    love.graphics.rectangle(
-      "line",
-      self.unmask_trigger.x,
-      self.unmask_trigger.y,
-      self.unmask_trigger.w,
-      self.unmask_trigger.h
-    )
-  end
+    local floor_y = self.world.platforms[1] and self.world.platforms[1].y or self.world.height
+    if self.background and self.background.ground and self.assets and self.assets.backgrounds then
+      local bucket = self.background.bucket and self.assets.backgrounds[self.background.bucket]
+      local image = bucket and bucket[self.background.ground.key]
+      draw_ground_layer(
+        image,
+        self.world.width,
+        floor_y,
+        self.camera,
+        background_scale,
+        self.ground_top
+      )
+    else
+      love.graphics.setColor(0.2, 0.2, 0.2)
+      for _, platform in ipairs(self.world.platforms) do
+        if not platform.sprite then
+          love.graphics.rectangle("fill", platform.x, platform.y, platform.w, platform.h)
+        end
+      end
+    end
 
-  for _, pickup in ipairs(self.pickups) do
-    pickup:draw()
-  end
+    -- Desenha sprites de plataformas
+    if self.assets and self.assets.platforms then
+      love.graphics.setColor(1, 1, 1)
+      for i, platform in ipairs(self.world.platforms) do
+        if platform.sprite and self.assets.platforms[platform.sprite] then
+          local img = self.assets.platforms[platform.sprite]
+          local s = platform.sprite_scale or 1
+          local ox = platform.sprite_offset_x or 0
+          local oy = platform.sprite_offset_y or 0
+          love.graphics.draw(img, platform.x + ox, platform.y + oy, 0, s, s)
+        end
+      end
+    end
 
-  for _, drop in ipairs(self.mask_drops) do
-    drop:draw()
-  end
+    if self.unmask_trigger and not self.unmask_trigger.used then
+      love.graphics.setColor(0.3, 0.3, 0.4)
+      love.graphics.rectangle(
+        "line",
+        self.unmask_trigger.x,
+        self.unmask_trigger.y,
+        self.unmask_trigger.w,
+        self.unmask_trigger.h
+      )
+    end
 
-  for _, enemy in ipairs(self.enemies) do
-    enemy:draw()
-  end
+    for _, pickup in ipairs(self.pickups) do
+      pickup:draw()
+    end
 
-  for _, boss in ipairs(self.bosses) do
-    boss:draw()
-  end
+    for _, drop in ipairs(self.mask_drops) do
+      drop:draw()
+    end
 
-  self.player:draw()
+    for _, enemy in ipairs(self.enemies) do
+      enemy:draw()
+    end
 
-  if self.particles then
-    self.particles:draw()
-  end
+    for _, boss in ipairs(self.bosses) do
+      boss:draw()
+    end
 
-  self.camera:detach()
+    self.player:draw()
+
+    if self.particles then
+      self.particles:draw()
+    end
+  end)
 
   self.hud:draw(
     self.player,
