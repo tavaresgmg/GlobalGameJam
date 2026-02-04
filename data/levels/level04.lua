@@ -20,7 +20,7 @@ function Level04.build(settings, constants)
   
   -- Mini boss no final da fase
   base.boss_spawns = {
-    { boss_index = 1, x = 3700 },  -- Capanga do Ferro
+    { boss_index = 2, x = 3700 },  -- Capanga da Noite
   }
   
   -- Segments: matar todos inimigos, depois o boss

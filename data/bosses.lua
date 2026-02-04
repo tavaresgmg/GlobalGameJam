@@ -25,6 +25,10 @@ local bosses = {
     evade_cooldown = 1.2,
     reward_offensive = "offensive_attack_25",
     reward_defensive = "defensive_shield_plus_2",
+    sprite_walk_folder = "miniboss - fase 2/andar",
+    sprite_attack_folder = "miniboss - fase 2/andar",
+    sprite_scale_mult = 1.45,
+    sprite_margin_bottom = 106,
   },
   {
     id = "boss_noite",
@@ -52,6 +56,10 @@ local bosses = {
     evade_cooldown = 1.0,
     reward_offensive = "offensive_dash_iframe",
     reward_defensive = "defensive_special_burst",
+    sprite_walk_folder = "miniboss - fase 3 e 4",
+    sprite_attack_folder = "miniboss - fase 3 e 4",
+    sprite_scale_mult = 2.1,
+    sprite_margin_bottom = 180,
   },
   {
     id = "boss_final",
